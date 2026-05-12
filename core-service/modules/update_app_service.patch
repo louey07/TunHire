@@ -1,0 +1,34 @@
+--- src/main/java/com/example/tunhire/applications/service/ApplicationService.java
++++ src/main/java/com/example/tunhire/applications/service/ApplicationService.java
+@@ -20,11 +20,14 @@
+ public class ApplicationService {
+ 	private final ApplicationRepository applicationRepository;
+ 	private final JobLookupService jobLookupService;
++	private final CandidateProfileProvider candidateProfileProvider;
+ 
+ 	public ApplicationService(
+ 			ApplicationRepository applicationRepository,
+-			JobLookupService jobLookupService
++			JobLookupService jobLookupService,
++			CandidateProfileProvider candidateProfileProvider
+ 	) {
+ 		this.applicationRepository = applicationRepository;
+ 		this.jobLookupService = jobLookupService;
++		this.candidateProfileProvider = candidateProfileProvider;
+ 	}
+ 
+@@ -62,11 +65,15 @@
+ 	}
+ 
+ 	private ApplicationResponse toResponse(Application application) {
++		CandidateSummaryDto summary = candidateProfileProvider.getCandidateSummary(application.getUserId());
+ 		return new ApplicationResponse(
+ 				application.getId(),
+ 				application.getJobId(),
+ 				application.getUserId(),
++				summary != null ? summary.firstName() : "Unknown",
++				summary != null ? summary.lastName() : "Unknown",
++				summary != null ? summary.resumeUrl() : null,
+ 				application.getStatus(),
+ 				application.getCreatedAt()
+ 		);
