@@ -3,8 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import Navbar from '@/components/Navbar'
-import { getToken, getUser } from '@/lib/auth'
+import { getToken, getUser, logoutWithServer } from '@/lib/auth'
 import { apiGet, apiPost, apiPostForm, apiPut, apiDelete } from '@/lib/api'
 
 type Skill = { id: number; skillName: string }
@@ -30,6 +29,21 @@ function extractLanguages(skills: Skill[]) {
     .filter(s => LANG_NAMES.has(s.skillName.toLowerCase()))
     .map(s => s.skillName)
     .join(' · ')
+}
+
+function formatAvailability(value?: string | null) {
+  if (!value) return 'Non defini'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Non defini'
+  const today = new Date()
+  const normalizedToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  if (normalizedDate <= normalizedToday) return 'Immediatement'
+  return new Intl.DateTimeFormat('fr-TN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(normalizedDate)
 }
 
 // ── icons ──────────────────────────────────────────────────────────────────────
@@ -111,173 +125,227 @@ function IcoFile() {
 // ── page-scoped CSS vars & styles ──────────────────────────────────────────────
 
 const PAGE_CSS = `
-.cd-page { background: #f7f4ee; min-height: 100vh; }
-.cd-subnav {
-  background: #15191f;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+.cd-page { background: var(--surface); min-height: 100vh; color: var(--on-surface); }
+.cd-layout { display: block; }
+.cd-sidebar {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 260px;
+  padding: 32px 18px;
+  background: var(--surface-container-low);
+  box-shadow: 0 24px 60px -30px rgba(25, 28, 30, 0.2);
+  flex-direction: column;
+  gap: 24px;
+  z-index: 30;
 }
-.cd-subnav-inner {
-  max-width: 1280px; margin: 0 auto; padding: 0 28px;
-  display: flex; gap: 4px;
+.cd-sidebar-title {
+  font-family: var(--font-headline), sans-serif;
+  font-size: 20px; font-weight: 800; letter-spacing: -0.02em;
+  color: var(--primary);
 }
-.cd-tab {
-  color: rgba(255,255,255,0.55);
-  padding: 10px 12px; border-radius: 8px;
-  font-size: 13.5px; text-decoration: none;
-  display: inline-flex; align-items: center; gap: 8px;
+.cd-sidebar-link {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-radius: 18px;
+  font-size: 13px; font-weight: 600; text-decoration: none;
+  color: var(--on-surface-variant);
+  background: transparent; border: 0; width: 100%; text-align: left;
+  font-family: inherit; cursor: pointer;
   transition: background .15s ease, color .15s ease;
 }
-.cd-tab:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.05) }
-.cd-tab.active { color: rgba(255,255,255,0.95); background: rgba(255,255,255,0.07) }
-.cd-content { max-width: 1280px; margin: 0 auto; padding: 36px 28px 80px; }
+.cd-sidebar-link:hover { background: var(--surface-container-high); color: var(--primary); }
+.cd-sidebar-link.active {
+  background: color-mix(in srgb, var(--surface-container-high) 70%, transparent);
+  color: var(--primary);
+}
+.cd-sidebar-dot {
+  width: 8px; height: 8px; border-radius: 999px;
+  background: var(--secondary);
+}
+.cd-main { margin-left: 0; }
+.cd-content { max-width: 1280px; margin: 0 auto; padding: 28px 28px 80px; }
+.cd-hero {
+  position: relative; overflow: hidden; border-radius: 28px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-container));
+  color: white; padding: 28px 32px; box-shadow: 0 28px 60px -30px rgba(0, 30, 64, 0.5);
+}
+.cd-hero::after {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(circle at 80% 20%, rgba(0, 218, 243, 0.2), transparent 55%);
+  pointer-events: none;
+}
+.cd-hero-inner { position: relative; display: flex; gap: 24px; justify-content: space-between; flex-wrap: wrap; }
+.cd-hero-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12); font-size: 10px;
+  font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--secondary-bright);
+}
+.cd-hero h1 {
+  margin: 12px 0 8px; font-family: var(--font-headline), sans-serif;
+  font-size: clamp(32px, 4vw, 46px); font-weight: 800; letter-spacing: -0.02em;
+}
+.cd-hero p { margin: 0; font-size: 15px; color: rgba(255,255,255,0.75); max-width: 520px; }
+.cd-hero-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; }
+.cd-hero-stat {
+  background: rgba(255,255,255,0.12); border-radius: 18px; padding: 14px 16px;
+}
+.cd-hero-stat p { margin: 0; font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: rgba(255,255,255,0.7); }
+.cd-hero-stat h3 { margin: 8px 0 0; font-size: 22px; font-weight: 700; }
 .cd-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.4fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   gap: 24px;
   align-items: start;
+  margin-top: 24px;
 }
 .cd-col-right { display: grid; gap: 24px; }
 .cd-card {
-  background: #fff;
-  border: 1px solid oklch(91% 0.008 90);
-  border-radius: 16px;
-  box-shadow: 0 1px 0 oklch(0% 0 0 / 0.02), 0 12px 32px -24px oklch(0% 0 0 / 0.12);
+  background: var(--surface-container-lowest);
+  border-radius: 20px;
+  box-shadow: 0 24px 48px -24px rgba(25, 28, 30, 0.16);
   overflow: hidden;
 }
 .cd-card-head {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   padding: 18px 22px;
-  border-bottom: 1px solid oklch(91% 0.008 90);
+  background: var(--surface-container-low);
 }
 .cd-ghost-btn {
-  background: transparent;
-  border: 1px solid oklch(85% 0.010 90);
-  color: oklch(18% 0.012 255);
-  padding: 7px 12px; border-radius: 9px; font-size: 12.5px; cursor: pointer;
+  background: var(--surface-container-lowest);
+  border: 1px solid color-mix(in srgb, var(--outline-variant) 20%, transparent);
+  color: var(--primary);
+  padding: 7px 12px; border-radius: 12px; font-size: 12.5px; cursor: pointer;
   display: inline-flex; align-items: center; gap: 6px;
-  transition: background .15s ease, border-color .15s ease;
+  transition: transform .15s ease, background .15s ease;
   font-family: inherit;
   text-decoration: none;
 }
-.cd-ghost-btn:hover { background: #efeae0; border-color: oklch(55% 0.010 255) }
+.cd-ghost-btn:hover { background: var(--surface-container-highest); transform: translateY(-1px); }
 .cd-dark-btn {
-  background: oklch(18% 0.012 255); color: white;
-  border: 1px solid oklch(18% 0.012 255);
-  padding: 7px 12px; border-radius: 9px; font-size: 12.5px; cursor: pointer;
+  background: var(--primary); color: var(--on-primary);
+  border: 1px solid var(--primary);
+  padding: 7px 12px; border-radius: 12px; font-size: 12.5px; cursor: pointer;
   display: inline-flex; align-items: center; gap: 6px;
-  transition: background .15s ease;
+  transition: transform .15s ease;
   font-family: inherit;
 }
-.cd-dark-btn:hover { background: oklch(28% 0.012 255) }
+.cd-dark-btn:hover { transform: translateY(-1px); }
 .cd-dark-btn:disabled { opacity: 0.6; cursor: default }
 .cd-cover {
-  height: 96px;
+  height: 110px;
   background:
-    radial-gradient(circle at 80% 30%, oklch(75% 0.10 195 / 0.55), transparent 55%),
-    linear-gradient(180deg, oklch(88% 0.055 195), oklch(94% 0.035 195) 70%);
+    radial-gradient(circle at 20% 20%, rgba(0, 218, 243, 0.25), transparent 50%),
+    linear-gradient(135deg, var(--primary), var(--primary-container));
 }
 .cd-profile-body { padding: 0 26px 24px; margin-top: -42px; position: relative; }
 .cd-avatar-big {
   width: 84px; height: 84px; border-radius: 22px;
-  background: linear-gradient(135deg, oklch(80% 0.09 195), oklch(50% 0.13 240));
+  background: linear-gradient(135deg, var(--secondary), var(--primary));
   color: white; display: grid; place-items: center;
-  font-family: var(--font-instrument-serif, "Times New Roman"), serif;
-  font-size: 36px; line-height: 1;
-  border: 4px solid #fff;
-  box-shadow: 0 4px 14px -6px oklch(0% 0 0 / 0.25);
+  font-family: var(--font-headline), sans-serif;
+  font-size: 32px; line-height: 1;
+  border: 4px solid var(--surface-container-lowest);
+  box-shadow: 0 12px 26px -18px rgba(0,0,0,0.3);
 }
 .cd-meta-line {
   margin-top: 16px; display: flex; flex-wrap: wrap; gap: 18px;
-  font-size: 13px; color: oklch(34% 0.012 255);
+  font-size: 13px; color: var(--on-surface-variant);
 }
 .cd-meta-item { display: inline-flex; align-items: center; gap: 7px }
-.cd-meta-item svg { color: oklch(55% 0.010 255) }
+.cd-meta-item svg { color: var(--secondary); }
 .cd-bio {
-  margin-top: 18px; padding-top: 18px;
-  border-top: 1px dashed oklch(85% 0.010 90);
-  font-size: 14px; line-height: 1.6; color: oklch(34% 0.012 255);
+  margin-top: 18px; padding: 16px;
+  border-radius: 16px; background: var(--surface-container-low);
+  font-size: 14px; line-height: 1.6; color: var(--on-surface-variant);
 }
 .cd-bio-quote {
-  font-family: var(--font-instrument-serif, "Times New Roman"), serif;
-  font-style: italic; font-size: 18px;
-  color: oklch(18% 0.012 255); line-height: 1.35; margin: 0 0 10px;
+  font-family: var(--font-headline), sans-serif;
+  font-style: italic; font-size: 17px;
+  color: var(--primary); line-height: 1.35; margin: 0 0 10px;
 }
 .cd-skill-tag {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 7px 6px 7px 13px;
-  background: oklch(94% 0.035 195);
-  color: oklch(28% 0.07 200);
-  border: 1px solid oklch(82% 0.06 195);
+  background: color-mix(in srgb, var(--secondary) 10%, var(--surface-container-lowest));
+  color: var(--secondary);
   border-radius: 999px;
-  font-size: 13px; font-weight: 500; letter-spacing: -0.005em;
+  font-size: 13px; font-weight: 600; letter-spacing: -0.005em;
 }
 .cd-skill-x {
   width: 18px; height: 18px; border-radius: 999px;
   display: grid; place-items: center;
-  background: transparent; border: 0; color: oklch(28% 0.07 200);
+  background: transparent; border: 0; color: var(--secondary);
   cursor: pointer; padding: 0;
   transition: background .15s ease, color .15s ease;
 }
-.cd-skill-x:hover { background: #1FA39F; color: white }
+.cd-skill-x:hover { background: var(--secondary); color: white }
 .cd-add-input {
-  width: 100%; border: 1px solid oklch(85% 0.010 90);
-  border-radius: 10px; padding: 11px 12px 11px 36px;
-  font-size: 13.5px; color: oklch(18% 0.012 255);
-  background: #fff; outline: none; font-family: inherit;
+  width: 100%; border: 1px solid color-mix(in srgb, var(--outline-variant) 20%, transparent);
+  border-radius: 12px; padding: 11px 12px 11px 36px;
+  font-size: 13.5px; color: var(--on-surface);
+  background: var(--surface-container-lowest); outline: none; font-family: inherit;
   transition: border-color .15s ease, box-shadow .15s ease;
 }
-.cd-add-input:focus { border-color: #1FA39F; box-shadow: 0 0 0 4px oklch(94% 0.035 195) }
+.cd-add-input:focus { border-color: var(--secondary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--secondary) 12%, transparent) }
 .cd-add-btn {
-  background: #1FA39F; color: white; border: 0;
-  padding: 0 16px; border-radius: 10px; font-size: 13px; font-weight: 500;
+  background: var(--secondary); color: white; border: 0;
+  padding: 0 16px; border-radius: 12px; font-size: 13px; font-weight: 600;
   display: inline-flex; align-items: center; gap: 6px;
   cursor: pointer; white-space: nowrap; font-family: inherit;
-  transition: background .15s ease;
+  transition: transform .15s ease;
 }
-.cd-add-btn:hover { background: oklch(55% 0.13 195) }
+.cd-add-btn:hover { transform: translateY(-1px) }
 .cd-add-btn:disabled { opacity: 0.6; cursor: default }
 .cd-dropzone {
-  border: 1.5px dashed oklch(85% 0.010 90);
-  border-radius: 14px; padding: 26px;
-  background: #f7f4ee; text-align: center;
+  border: 1.5px dashed color-mix(in srgb, var(--outline-variant) 22%, transparent);
+  border-radius: 16px; padding: 26px;
+  background: var(--surface-container-low); text-align: center;
   transition: border-color .15s ease, background .15s ease;
 }
-.cd-dropzone:hover { border-color: #1FA39F; background: oklch(96% 0.025 195 / 0.5) }
+.cd-dropzone:hover { border-color: var(--secondary); background: color-mix(in srgb, var(--secondary) 6%, var(--surface-container-low)) }
 .cd-extr-ai-chip {
   display: inline-flex; align-items: center; gap: 6px;
-  font-family: var(--font-geist-mono, monospace); font-size: 10.5px;
+  font-family: var(--font-body), sans-serif; font-size: 10.5px;
   letter-spacing: 0.08em; text-transform: uppercase;
-  color: oklch(28% 0.07 200);
-  padding: 4px 8px; border: 1px solid #1FA39F; border-radius: 999px;
-  background: white;
+  color: var(--secondary);
+  padding: 4px 8px; border: 1px solid color-mix(in srgb, var(--secondary) 40%, transparent); border-radius: 999px;
+  background: var(--surface-container-lowest);
 }
 .cd-edit-input {
-  width: 100%; border: 1px solid oklch(85% 0.010 90); border-radius: 10px;
-  padding: 10px 12px; font-size: 13px; color: oklch(18% 0.012 255);
-  background: #fff; outline: none; font-family: inherit;
+  width: 100%; border: 1px solid color-mix(in srgb, var(--outline-variant) 20%, transparent); border-radius: 12px;
+  padding: 10px 12px; font-size: 13px; color: var(--on-surface);
+  background: var(--surface-container-lowest); outline: none; font-family: inherit;
   transition: border-color .15s ease;
 }
-.cd-edit-input:focus { border-color: #1FA39F }
+.cd-edit-input:focus { border-color: var(--secondary) }
 .cd-save-btn {
-  background: oklch(18% 0.012 255); color: white; border: 0;
-  padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 500;
+  background: var(--primary); color: var(--on-primary); border: 0;
+  padding: 9px 16px; border-radius: 12px; font-size: 13px; font-weight: 600;
   cursor: pointer; font-family: inherit;
-  transition: background .15s ease;
+  transition: transform .15s ease;
 }
-.cd-save-btn:hover { background: oklch(28% 0.012 255) }
+.cd-save-btn:hover { transform: translateY(-1px) }
 .cd-save-btn:disabled { opacity: 0.6; cursor: default }
 .cd-cancel-btn {
-  background: transparent; border: 1px solid oklch(85% 0.010 90);
-  color: oklch(18% 0.012 255); padding: 9px 16px; border-radius: 10px;
+  background: transparent; border: 1px solid color-mix(in srgb, var(--outline-variant) 20%, transparent);
+  color: var(--primary); padding: 9px 16px; border-radius: 12px;
   font-size: 13px; cursor: pointer; font-family: inherit;
 }
-.cd-cancel-btn:hover { background: #f7f4ee }
+.cd-cancel-btn:hover { background: var(--surface-container-low) }
 @media (max-width: 1000px) {
   .cd-grid { grid-template-columns: 1fr }
 }
 @media (max-width: 640px) {
   .cd-content { padding: 22px 16px 60px }
-  .cd-subnav-inner { padding: 0 16px }
+}
+@media (min-width: 1024px) {
+  .cd-sidebar { display: flex }
+  .cd-main { margin-left: 260px }
+  .cd-content { padding: 28px 32px 80px }
 }
 `
 
@@ -295,7 +363,12 @@ export default function CandidateDashboard() {
   const [cvFileName, setCvFileName] = useState('')
 
   const [editMode, setEditMode] = useState(false)
-  const [editForm, setEditForm] = useState({ bio: '', location: '', yearsOfExperience: 0 })
+  const [editForm, setEditForm] = useState({
+    bio: '',
+    location: '',
+    availableFrom: '',
+    yearsOfExperience: 0,
+  })
   const [savingProfile, setSavingProfile] = useState(false)
   const [profileMsg, setProfileMsg] = useState('')
 
@@ -305,6 +378,10 @@ export default function CandidateDashboard() {
 
   const [cvParsing, setCvParsing] = useState(false)
   const [cvMsg, setCvMsg] = useState('')
+
+  const handleLogout = () => {
+    void logoutWithServer()
+  }
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -324,6 +401,7 @@ export default function CandidateDashboard() {
         setEditForm({
           bio: data.bio || '',
           location: data.location || '',
+          availableFrom: data.availableFrom ? String(data.availableFrom) : '',
           yearsOfExperience: data.yearsOfExperience || 0,
         })
         const seen = new Set<string>()
@@ -342,7 +420,13 @@ export default function CandidateDashboard() {
     setSavingProfile(true)
     setProfileMsg('')
     try {
-      await apiPut('/candidates/me', editForm)
+      const payload = {
+        bio: editForm.bio || null,
+        location: editForm.location || null,
+        availableFrom: editForm.availableFrom || null,
+        yearsOfExperience: editForm.yearsOfExperience > 0 ? editForm.yearsOfExperience : null,
+      }
+      await apiPut('/candidates/me', payload)
       await loadProfile()
       setEditMode(false)
       setProfileMsg('Profil mis à jour.')
@@ -404,6 +488,7 @@ export default function CandidateDashboard() {
         setEditForm({
           bio: data.bio || '',
           location: data.location || '',
+          availableFrom: data.availableFrom ? String(data.availableFrom) : '',
           yearsOfExperience: data.yearsOfExperience || 0,
         })
         const seen = new Set<string>()
@@ -430,6 +515,16 @@ export default function CandidateDashboard() {
   const langs = extractLanguages(skills)
   const fullName = [firstName, lastName].filter(Boolean).join(' ')
   const initials = ((firstName[0] || '') + (lastName[0] || '')).toUpperCase() || '?'
+  const profileScore = Math.min(
+    100,
+    40 + skills.length * 6 + (cvLoaded ? 20 : 0) + (profile?.bio ? 10 : 0),
+  )
+  const availabilityLabel = formatAvailability(profile?.availableFrom)
+  const experienceLabel = profile?.yearsOfExperience ? `${profile.yearsOfExperience} ans` : '—'
+  const cvStatusLabel = cvLoaded ? 'CV analyse' : 'CV manquant'
+  const insightLine = skills.length >= 6
+    ? "Accentuez vos projets cloud pour maximiser votre visibilite."
+    : "Ajoutez des competences ciblees pour renforcer votre profil IA."
 
   // For bio display: first sentence as italic quote, rest as body
   const bio = profile?.bio || ''
@@ -441,420 +536,506 @@ export default function CandidateDashboard() {
     <>
       <style>{PAGE_CSS}</style>
       <div className="cd-page">
-        <Navbar />
-
-        {/* Sub-nav tab strip */}
-        <div className="cd-subnav">
-          <div className="cd-subnav-inner">
-            <Link href="/dashboard/candidate" className="cd-tab active">
-              <span style={{ width: 5, height: 5, borderRadius: 999, background: '#1FA39F', display: 'inline-block' }} />
-              Mon profil
-            </Link>
-            <Link href="/jobs" className="cd-tab">Offres</Link>
-            <Link href="/dashboard/candidate/applications" className="cd-tab">Candidatures</Link>
-          </div>
-        </div>
-
-        <div className="cd-content">
-
-          {/* Page header */}
-          <div style={{ marginBottom: 28 }}>
-            <div style={{
-              display: 'flex', gap: 14, alignItems: 'center',
-              color: 'oklch(55% 0.010 255)',
-              fontSize: 12.5, fontFamily: 'var(--font-geist-mono, monospace)',
-              letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 14,
-            }}>
-              <span>Espace candidat</span>
-              <span style={{ width: 4, height: 4, borderRadius: 999, background: 'oklch(72% 0.010 255)', display: 'inline-block' }} />
-              <span>Mon profil</span>
+        <div className="cd-layout">
+          <aside className="cd-sidebar">
+            <div>
+              <div className="cd-sidebar-title">TunHire Nexus</div>
+              <p className="label-uppercase" style={{ fontSize: 10, color: 'var(--on-surface-variant)', marginTop: 6 }}>
+                Candidate Portal
+              </p>
             </div>
-            <h1 style={{
-              margin: 0,
-              fontFamily: 'var(--font-instrument-serif, "Times New Roman"), serif',
-              fontWeight: 400,
-              fontSize: 'clamp(40px, 4.4vw, 56px)',
-              lineHeight: 1,
-              letterSpacing: '-0.015em',
-              color: 'oklch(18% 0.012 255)',
-            }}>
-              Bonjour,{' '}
-              <em style={{ fontStyle: 'italic', color: 'oklch(28% 0.07 200)' }}>
-                {firstName || '…'}
-              </em>
-            </h1>
-          </div>
+            <nav style={{ display: 'grid', gap: 8 }}>
+              <Link href="/dashboard/candidate" className="cd-sidebar-link active">
+                Tableau de bord
+                <span className="cd-sidebar-dot" />
+              </Link>
+              <Link href="/dashboard/candidate/applications" className="cd-sidebar-link">
+                Mes Candidatures
+              </Link>
+              <Link href="/jobs" className="cd-sidebar-link">
+                Trouver un Job
+              </Link>
+              <Link href="/dashboard/candidate" className="cd-sidebar-link">
+                Profil
+              </Link>
+              <button type="button" className="cd-sidebar-link" onClick={handleLogout}>
+                Deconnexion
+              </button>
+            </nav>
+          </aside>
 
-          {loading ? (
-            <p style={{ color: 'oklch(55% 0.010 255)', fontSize: 14 }}>Chargement…</p>
-          ) : (
-            <div className="cd-grid">
-
-              {/* ══════════ LEFT: PROFILE CARD ══════════ */}
-              <section className="cd-card">
-                <div className="cd-cover" />
-
-                <div className="cd-profile-body">
-                  {/* Top row: avatar + edit button */}
-                  <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16 }}>
-                    <div className="cd-avatar-big">{initials[0]}</div>
-                    {!editMode && (
-                      <button
-                        className="cd-ghost-btn"
-                        onClick={() => { setEditMode(true); setProfileMsg('') }}
-                      >
-                        <IcoEdit /> Éditer le profil
-                      </button>
-                    )}
+          <main className="cd-main">
+            <header className="sticky top-0 z-30 flex items-center justify-between gap-6 bg-[var(--surface)]/80 px-6 py-4 backdrop-blur-xl shadow-sm shadow-[color-mix(in_srgb,var(--on-surface)_6%,transparent)]">
+              <div className="flex w-full max-w-xl items-center">
+                <div className="relative w-full">
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--on-surface-variant)]">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                      <circle cx="11" cy="11" r="7" />
+                      <line x1="16.65" y1="16.65" x2="21" y2="21" />
+                    </svg>
+                  </span>
+                  <input
+                    className="w-full rounded-xl bg-[var(--surface-container-lowest)] py-3 pl-12 pr-4 text-sm text-[var(--on-surface)] placeholder:text-[var(--on-surface-variant)] focus:outline-none focus:ring-2 focus:ring-[var(--secondary-fixed-dim)]/20"
+                    placeholder="Rechercher des opportunites..."
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <button className="relative rounded-full p-2 text-[var(--on-surface-variant)] transition hover:text-[var(--primary)]">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7" />
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                  </svg>
+                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[var(--error)]" />
+                </button>
+                <button className="rounded-full p-2 text-[var(--on-surface-variant)] transition hover:text-[var(--primary)]">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0A1.65 1.65 0 0 0 9 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0A1.65 1.65 0 0 0 20.91 11H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                  </svg>
+                </button>
+                <div className="hidden items-center gap-3 border-l border-[var(--surface-container-high)] pl-4 sm:flex">
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-[var(--primary)] leading-none">{fullName || 'Profil candidat'}</p>
+                    <p className="mt-1 text-[10px] font-medium uppercase tracking-tight text-[var(--on-surface-variant)]">
+                      Portail candidat
+                    </p>
                   </div>
-
-                  {/* Name */}
-                  <div style={{
-                    marginTop: 16,
-                    fontFamily: 'var(--font-instrument-serif, "Times New Roman"), serif',
-                    fontWeight: 400, fontSize: 38, lineHeight: 1,
-                    letterSpacing: '-0.015em', color: 'oklch(18% 0.012 255)',
-                  }}>
-                    {fullName || '—'}
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--primary)] text-xs font-bold text-white">
+                    {initials}
                   </div>
+                </div>
+              </div>
+            </header>
 
-                  {!editMode ? (
-                    <>
-                      {/* Meta */}
-                      {(profile?.location || (profile?.yearsOfExperience != null && profile.yearsOfExperience > 0)) && (
-                        <div className="cd-meta-line">
-                          {profile?.location && (
-                            <span className="cd-meta-item">
-                              <IcoPin />
-                              <b style={{ color: 'oklch(18% 0.012 255)', fontWeight: 500 }}>{profile.location}</b>
-                            </span>
-                          )}
-                          {profile?.yearsOfExperience != null && profile.yearsOfExperience > 0 && (
-                            <span className="cd-meta-item">
-                              <IcoBriefcase />
-                              <b style={{ color: 'oklch(18% 0.012 255)', fontWeight: 500 }}>
-                                {profile.yearsOfExperience} an{profile.yearsOfExperience > 1 ? 's' : ''}
-                              </b>
-                              <span>d&apos;expérience</span>
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Bio */}
-                      {bio ? (
-                        <div className="cd-bio">
-                          <p className="cd-bio-quote">« {bioQuote} »</p>
-                          {bioRest && <span>{bioRest}</span>}
-                        </div>
-                      ) : (
-                        <p style={{ marginTop: 16, fontSize: 13, color: 'oklch(55% 0.010 255)' }}>
-                          Aucune information renseignée.
-                        </p>
-                      )}
-
-                      {profileMsg && (
-                        <p style={{
-                          marginTop: 12, fontSize: 12.5,
-                          color: profileMsg.includes('Erreur') ? 'oklch(58% 0.16 25)' : 'oklch(45% 0.13 150)',
-                        }}>
-                          {profileMsg}
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    /* ── Inline edit form ── */
-                    <div style={{ marginTop: 18, display: 'grid', gap: 12 }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'oklch(18% 0.012 255)', marginBottom: 5 }}>Bio</label>
-                        <textarea
-                          className="cd-edit-input"
-                          value={editForm.bio}
-                          onChange={e => setEditForm(p => ({ ...p, bio: e.target.value }))}
-                          rows={4}
-                          style={{ resize: 'vertical' }}
-                        />
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'oklch(18% 0.012 255)', marginBottom: 5 }}>Localisation</label>
-                          <input
-                            className="cd-edit-input"
-                            value={editForm.location}
-                            onChange={e => setEditForm(p => ({ ...p, location: e.target.value }))}
-                            placeholder="Tunis, Sfax…"
-                          />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'oklch(18% 0.012 255)', marginBottom: 5 }}>
-                            Années d&apos;expérience
-                          </label>
-                          <input
-                            className="cd-edit-input"
-                            type="number" min="0"
-                            value={editForm.yearsOfExperience}
-                            onChange={e => setEditForm(p => ({ ...p, yearsOfExperience: Number(e.target.value) }))}
-                          />
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                        <button className="cd-save-btn" onClick={saveProfile} disabled={savingProfile}>
-                          {savingProfile ? 'Enregistrement…' : 'Enregistrer'}
-                        </button>
-                        <button className="cd-cancel-btn" onClick={() => { setEditMode(false); setProfileMsg('') }}>
-                          Annuler
-                        </button>
-                      </div>
-                      {profileMsg && (
-                        <p style={{ fontSize: 12.5, color: profileMsg.includes('Erreur') ? 'oklch(58% 0.16 25)' : 'oklch(45% 0.13 150)' }}>
-                          {profileMsg}
-                        </p>
-                      )}
+            <div className="cd-content space-y-8">
+              <section
+                className="relative overflow-hidden rounded-xl p-8 text-white shadow-2xl shadow-[color-mix(in_srgb,var(--primary)_20%,transparent)]"
+                style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)' }}
+              >
+                <div className="pointer-events-none absolute right-0 top-0 h-full w-1/2 opacity-10">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,var(--secondary-fixed-dim),transparent_60%)]" />
+                </div>
+                <div className="relative grid items-center gap-8 md:grid-cols-2">
+                  <div>
+                    <h2 className="font-headline text-3xl font-extrabold tracking-tight md:text-4xl">
+                      Bienvenue, {firstName || '...'}
+                    </h2>
+                    <div className="mt-4 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium">
+                      <span className="text-[var(--secondary-fixed-dim)]">IA</span>
+                      <p>
+                        Votre profil est optimise a{' '}
+                        <span className="font-bold text-[var(--secondary-fixed-dim)]">{profileScore}%</span>
+                      </p>
                     </div>
-                  )}
+                    <div className="mt-6 flex flex-wrap gap-3">
+                      <Link
+                        href="/jobs"
+                        className="rounded-xl bg-white px-6 py-3 text-sm font-bold text-[var(--primary)] transition hover:bg-[var(--secondary-container)]"
+                      >
+                        Voir les matchs IA
+                      </Link>
+                      <button
+                        type="button"
+                        className="rounded-xl border border-white/20 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10"
+                      >
+                        Partager mon profil
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="rounded-2xl border border-white/5 bg-white/5 p-4 text-center backdrop-blur-sm">
+                      <p className="font-headline text-3xl font-extrabold text-[var(--secondary-fixed-dim)]">{skills.length}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">Competences</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/5 bg-white/5 p-4 text-center backdrop-blur-sm">
+                      <p className="font-headline text-3xl font-extrabold text-[var(--tertiary-fixed)]">{experienceLabel}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">Experience</p>
+                    </div>
+                  </div>
                 </div>
               </section>
 
-              {/* ══════════ RIGHT COLUMN ══════════ */}
-              <div className="cd-col-right">
-
-                {/* ── CV CARD ── */}
-                <section className="cd-card">
-                  <div className="cd-card-head">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13.5, fontWeight: 500, color: 'oklch(18% 0.012 255)' }}>
-                      <span style={{ fontFamily: 'var(--font-geist-mono, monospace)', fontSize: 10.5, color: 'oklch(55% 0.010 255)', letterSpacing: '0.08em' }}>02</span>
-                      Mon CV
-                    </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      {cvLoaded && profile?.resumeUrl && (
-                        <a
-                          href={profile.resumeUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="cd-ghost-btn"
-                        >
-                          <IcoDownload /> Télécharger
-                        </a>
-                      )}
-                      <button
-                        className="cd-dark-btn"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={cvParsing}
-                      >
-                        <IcoUpload />
-                        {cvParsing ? 'Analyse…' : cvLoaded ? 'Remplacer' : 'Importer CV'}
-                      </button>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".pdf"
-                        style={{ display: 'none' }}
-                        onChange={e => {
-                          const file = e.target.files?.[0]
-                          if (file) handleCVFile(file)
-                          e.target.value = ''
-                        }}
-                      />
-                    </div>
+              {loading ? (
+                <div className="grid gap-8 lg:grid-cols-12">
+                  <div className="space-y-6 lg:col-span-8">
+                    <div className="h-40 rounded-xl bg-[var(--surface-container-low)] animate-pulse" />
+                    <div className="h-56 rounded-xl bg-[var(--surface-container-low)] animate-pulse" />
                   </div>
-
-                  {cvLoaded ? (
-                    /* ── Loaded state ── */
-                    <div style={{ padding: 22, display: 'grid', gap: 18 }}>
-                      {/* File row */}
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: 14,
-                        padding: 14, border: '1px solid oklch(91% 0.008 90)',
-                        borderRadius: 12, background: '#f7f4ee',
-                      }}>
-                        {/* PDF thumbnail */}
-                        <div style={{
-                          width: 48, height: 60, background: 'white',
-                          border: '1px solid oklch(85% 0.010 90)', borderRadius: 6,
-                          flexShrink: 0, display: 'grid', placeItems: 'end center',
-                          paddingBottom: 6,
-                        }}>
-                          <span style={{
-                            fontFamily: 'var(--font-geist-mono, monospace)', fontSize: 9,
-                            background: 'oklch(58% 0.16 25)', color: 'white',
-                            padding: '2px 4px', borderRadius: 3, letterSpacing: '0.04em',
-                          }}>PDF</span>
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ margin: 0, fontSize: 14, fontWeight: 500, color: 'oklch(18% 0.012 255)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {cvFileName || 'CV.pdf'}
-                          </p>
-                          <div style={{ marginTop: 4, fontSize: 12, fontFamily: 'var(--font-geist-mono, monospace)', letterSpacing: '0.04em', color: 'oklch(45% 0.14 150)' }}>
-                            ✓ Analysé par l&apos;IA
+                  <div className="space-y-6 lg:col-span-4">
+                    <div className="h-52 rounded-xl bg-[var(--surface-container-low)] animate-pulse" />
+                    <div className="h-40 rounded-xl bg-[var(--surface-container-low)] animate-pulse" />
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+                  <div className="space-y-8 lg:col-span-8">
+                    {!editMode ? (
+                      <div className="rounded-xl bg-[var(--surface-container-lowest)] p-8 transition-all hover:shadow-xl hover:shadow-[color-mix(in_srgb,var(--primary)_5%,transparent)]">
+                        <div className="mb-6 flex items-start justify-between">
+                          <div>
+                            <h3 className="font-headline text-2xl font-bold text-[var(--primary)]">Informations Generales</h3>
+                            <p className="text-sm text-[var(--on-surface-variant)]">
+                              Gerez votre identite professionnelle et votre disponibilite.
+                            </p>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => { setEditMode(true); setProfileMsg('') }}
+                            className="flex items-center gap-2 rounded-lg px-4 py-2 text-[var(--primary)] transition hover:bg-[var(--surface-container-low)]"
+                          >
+                            <IcoEdit />
+                            Editer
+                          </button>
                         </div>
-                      </div>
-
-                      {/* Extracted section */}
-                      <div style={{ border: '1px solid oklch(91% 0.008 90)', borderRadius: 12, overflow: 'hidden' }}>
-                        <div style={{
-                          padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 8,
-                          background: 'linear-gradient(180deg, oklch(96% 0.02 195 / 0.55), transparent)',
-                          borderBottom: '1px solid oklch(91% 0.008 90)',
-                        }}>
-                          <span className="cd-extr-ai-chip">
-                            <span style={{ width: 8, height: 8, borderRadius: 2, background: '#1FA39F', transform: 'rotate(45deg)', display: 'inline-block' }} />
-                            Extrait par l&apos;IA
-                          </span>
-                          <span style={{ fontSize: 13, color: 'oklch(34% 0.012 255)' }}>— vérifié, modifiable</span>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
-                          <div style={{ padding: '14px 16px', borderTop: '1px solid oklch(91% 0.008 90)', borderRight: '1px solid oklch(91% 0.008 90)' }}>
-                            <div style={{ fontFamily: 'var(--font-geist-mono, monospace)', fontSize: 10.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'oklch(55% 0.010 255)', marginBottom: 4 }}>
-                              Années d&apos;expérience
+                        <div className="grid gap-10 md:grid-cols-2">
+                          <div className="space-y-6">
+                            <div>
+                              <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-[var(--on-surface-variant)]/60">Biographie</label>
+                              {bio ? (
+                                <p className="text-[var(--on-surface)] italic">"{bioQuote}"{bioRest ? ` ${bioRest}` : ''}</p>
+                              ) : (
+                                <p className="text-sm text-[var(--on-surface-variant)]">Aucune information renseignee.</p>
+                              )}
                             </div>
-                            <div style={{ fontFamily: 'var(--font-instrument-serif, "Times New Roman"), serif', fontSize: 22, lineHeight: 1, letterSpacing: '-0.005em', color: 'oklch(18% 0.012 255)' }}>
-                              {profile?.yearsOfExperience ? `${profile.yearsOfExperience} ans` : '—'}
-                            </div>
-                          </div>
-                          <div style={{ padding: '14px 16px', borderTop: '1px solid oklch(91% 0.008 90)' }}>
-                            <div style={{ fontFamily: 'var(--font-geist-mono, monospace)', fontSize: 10.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'oklch(55% 0.010 255)', marginBottom: 4 }}>
-                              Localisation
-                            </div>
-                            <div style={{ fontSize: 14, color: 'oklch(18% 0.012 255)', lineHeight: 1.4 }}>
-                              {profile?.location || '—'}
-                            </div>
-                          </div>
-                          {langs && (
-                            <div style={{ padding: '14px 16px', borderTop: '1px solid oklch(91% 0.008 90)', gridColumn: '1 / -1' }}>
-                              <div style={{ fontFamily: 'var(--font-geist-mono, monospace)', fontSize: 10.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'oklch(55% 0.010 255)', marginBottom: 4 }}>
-                                Langues
+                            <div className="flex gap-10">
+                              <div>
+                                <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-[var(--on-surface-variant)]/60">Localisation</label>
+                                <div className="flex items-center gap-2 font-bold text-[var(--primary)]">
+                                  <IcoPin />
+                                  {profile?.location || '—'}
+                                </div>
                               </div>
-                              <div style={{ fontSize: 14, color: 'oklch(18% 0.012 255)', lineHeight: 1.4 }}>
-                                {langs}
+                              <div>
+                                <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-[var(--on-surface-variant)]/60">Experience</label>
+                                <p className="font-bold text-[var(--primary)]">{experienceLabel}</p>
                               </div>
                             </div>
-                          )}
+                          </div>
+                          <div className="rounded-2xl bg-[var(--surface-container-low)] p-6 flex items-center gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--secondary-container)] text-[var(--secondary)]">
+                              <IcoBriefcase />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold uppercase tracking-widest text-[var(--on-surface-variant)]/60">Disponibilite</label>
+                              <p className="font-bold text-[var(--primary)]">{availabilityLabel}</p>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-
-                      {cvMsg && (
-                        <p style={{ fontSize: 12.5, color: cvMsg.includes('Erreur') ? 'oklch(58% 0.16 25)' : 'oklch(45% 0.13 150)' }}>
-                          {cvMsg}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    /* ── Empty / dropzone state ── */
-                    <div style={{ padding: 26 }}>
-                      <div
-                        className="cd-dropzone"
-                        onDragOver={e => e.preventDefault()}
-                        onDrop={e => {
-                          e.preventDefault()
-                          const file = e.dataTransfer.files[0]
-                          if (file) handleCVFile(file)
-                        }}
-                      >
-                        <div style={{
-                          width: 46, height: 46, borderRadius: 14, margin: '0 auto 14px',
-                          display: 'grid', placeItems: 'center',
-                          background: '#fff', border: '1px solid oklch(91% 0.008 90)',
-                          color: 'oklch(28% 0.07 200)',
-                        }}>
-                          <IcoFile />
-                        </div>
-                        <div style={{ fontSize: 15, fontWeight: 500, color: 'oklch(18% 0.012 255)' }}>
-                          Importer votre CV
-                        </div>
-                        <div style={{ marginTop: 4, fontSize: 12.5, color: 'oklch(55% 0.010 255)' }}>
-                          Glissez un fichier PDF, ou cliquez sur le bouton ci-dessus
-                        </div>
-                        {cvMsg && (
-                          <p style={{ marginTop: 10, fontSize: 12.5, color: cvMsg.includes('Erreur') ? 'oklch(58% 0.16 25)' : 'oklch(45% 0.13 150)' }}>
-                            {cvMsg}
+                        {profileMsg && (
+                          <p className={`mt-4 text-sm ${profileMsg.includes('Erreur') ? 'text-[var(--error)]' : 'text-[var(--secondary)]'}`}>
+                            {profileMsg}
                           </p>
                         )}
                       </div>
-                    </div>
-                  )}
-                </section>
-
-                {/* ── SKILLS CARD ── */}
-                <section className="cd-card">
-                  <div className="cd-card-head">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13.5, fontWeight: 500, color: 'oklch(18% 0.012 255)' }}>
-                      <span style={{ fontFamily: 'var(--font-geist-mono, monospace)', fontSize: 10.5, color: 'oklch(55% 0.010 255)', letterSpacing: '0.08em' }}>03</span>
-                      Compétences
-                    </div>
-                    <span style={{ fontFamily: 'var(--font-geist-mono, monospace)', fontSize: 11, color: 'oklch(55% 0.010 255)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                      {skills.length} ajoutées
-                    </span>
-                  </div>
-
-                  <div style={{ padding: '20px 22px 22px' }}>
-                    {/* Skill tags */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', minHeight: 36 }}>
-                      {skills.length === 0 ? (
-                        <span style={{ fontSize: 13, color: 'oklch(55% 0.010 255)' }}>Aucune compétence ajoutée.</span>
-                      ) : skills.map(skill => (
-                        <span key={skill.id} className="cd-skill-tag">
-                          {skill.skillName}
+                    ) : (
+                      <form
+                        className="rounded-xl bg-[var(--surface-container-lowest)] p-8 shadow-2xl ring-1 ring-[var(--primary)]/10"
+                        onSubmit={(e) => { e.preventDefault(); saveProfile() }}
+                      >
+                        <div className="mb-8 flex items-start justify-between">
+                          <h3 className="font-headline text-2xl font-bold text-[var(--primary)]">Modifier le Profil</h3>
                           <button
-                            className="cd-skill-x"
-                            onClick={() => deleteSkill(skill.id)}
-                            aria-label="Retirer"
+                            type="button"
+                            onClick={() => { setEditMode(false); setProfileMsg('') }}
+                            className="rounded-full p-2 hover:bg-[var(--surface-container-high)]"
                           >
                             <IcoX />
                           </button>
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Add input */}
-                    <div style={{ marginTop: 18, paddingTop: 18, borderTop: '1px dashed oklch(85% 0.010 90)' }}>
-                      <form
-                        onSubmit={e => { e.preventDefault(); addSkills() }}
-                        style={{ display: 'flex', gap: 8 }}
-                      >
-                        <div style={{ flex: 1, position: 'relative' }}>
-                          <svg
-                            viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                            style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: 'oklch(55% 0.010 255)' }}
-                          >
-                            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-                          </svg>
-                          <input
-                            className="cd-add-input"
-                            value={newSkill}
-                            onChange={e => setNewSkill(e.target.value)}
-                            placeholder="Ajouter une compétence — ex. Kubernetes, Python…"
-                          />
                         </div>
+                        <div className="space-y-6">
+                          <div className="space-y-2">
+                            <label className="text-sm font-bold text-[var(--on-surface-variant)]">Bio</label>
+                            <textarea
+                              className="w-full rounded-xl bg-[var(--surface-container-low)] p-4 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                              placeholder="Racontez votre parcours..."
+                              value={editForm.bio}
+                              onChange={(e) => setEditForm((p) => ({ ...p, bio: e.target.value }))}
+                              rows={4}
+                            />
+                          </div>
+                          <div className="grid gap-6 md:grid-cols-2">
+                            <div className="space-y-2">
+                              <label className="text-sm font-bold text-[var(--on-surface-variant)]">Localisation</label>
+                              <input
+                                className="w-full rounded-xl bg-[var(--surface-container-low)] p-4 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                                placeholder="Tunis, Sfax..."
+                                value={editForm.location}
+                                onChange={(e) => setEditForm((p) => ({ ...p, location: e.target.value }))}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-sm font-bold text-[var(--on-surface-variant)]">Disponibilite</label>
+                              <input
+                                type="date"
+                                className="w-full rounded-xl bg-[var(--surface-container-low)] p-4 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                                value={editForm.availableFrom}
+                                onChange={(e) => setEditForm((p) => ({ ...p, availableFrom: e.target.value }))}
+                              />
+                            </div>
+                          </div>
+                          <div className="grid gap-6 md:grid-cols-2">
+                            <div className="space-y-2">
+                              <label className="text-sm font-bold text-[var(--on-surface-variant)]">Annees d&apos;experience</label>
+                              <input
+                                type="number"
+                                min="0"
+                                className="w-full rounded-xl bg-[var(--surface-container-low)] p-4 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                                value={editForm.yearsOfExperience}
+                                onChange={(e) => setEditForm((p) => ({ ...p, yearsOfExperience: Number(e.target.value) }))}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex justify-end gap-3 pt-4">
+                            <button
+                              type="button"
+                              onClick={() => { setEditMode(false); setProfileMsg('') }}
+                              className="rounded-xl px-6 py-3 text-sm font-bold text-[var(--on-surface-variant)] transition hover:bg-[var(--surface-container-low)]"
+                            >
+                              Annuler
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={savingProfile}
+                              className="rounded-xl bg-[var(--primary)] px-8 py-3 text-sm font-bold text-white shadow-lg shadow-[color-mix(in_srgb,var(--primary)_20%,transparent)] transition hover:-translate-y-0.5"
+                            >
+                              {savingProfile ? 'Enregistrement...' : 'Sauvegarder'}
+                            </button>
+                          </div>
+                          {profileMsg && (
+                            <p className={`text-sm ${profileMsg.includes('Erreur') ? 'text-[var(--error)]' : 'text-[var(--secondary)]'}`}>
+                              {profileMsg}
+                            </p>
+                          )}
+                        </div>
+                      </form>
+                    )}
+
+                    <div className="rounded-xl bg-[var(--surface-container-lowest)] p-8">
+                      <div className="mb-6 flex items-center justify-between">
+                        <h3 className="font-headline text-2xl font-bold text-[var(--primary)]">Expertise & Competences</h3>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--on-surface-variant)]">
+                          {skills.length} ajoutees
+                        </span>
+                      </div>
+                      <div className="mb-8 flex flex-wrap gap-3">
+                        {skills.length === 0 ? (
+                          <span className="text-sm text-[var(--on-surface-variant)]">Aucune competence ajoutee.</span>
+                        ) : skills.map((skill) => (
+                          <div
+                            key={skill.id}
+                            className="group flex items-center gap-2 rounded-full bg-[var(--primary)]/5 px-4 py-2 font-bold text-[var(--primary)] transition hover:bg-[var(--primary)] hover:text-white"
+                          >
+                            {skill.skillName}
+                            <button
+                              type="button"
+                              onClick={() => deleteSkill(skill.id)}
+                              className="opacity-0 transition group-hover:opacity-100"
+                              aria-label="Retirer"
+                            >
+                              <IcoX />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <form
+                        onSubmit={(e) => { e.preventDefault(); addSkills() }}
+                        className="relative max-w-md"
+                      >
+                        <input
+                          className="w-full rounded-xl bg-[var(--surface-container-low)] py-4 pl-4 pr-32 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                          placeholder="Ajouter une competence..."
+                          value={newSkill}
+                          onChange={(e) => setNewSkill(e.target.value)}
+                        />
                         <button
                           type="submit"
-                          className="cd-add-btn"
                           disabled={addingSkill || !newSkill.trim()}
+                          className="absolute right-2 top-2 bottom-2 rounded-lg bg-[var(--primary)] px-6 text-sm font-bold text-white transition hover:bg-[var(--primary-container)] disabled:opacity-60"
                         >
-                          <IcoPlus />
-                          {addingSkill ? 'Ajout…' : 'Ajouter'}
+                          {addingSkill ? 'Ajout...' : 'Ajouter'}
                         </button>
                       </form>
-                      <div style={{ marginTop: 10, fontSize: 11.5, color: 'oklch(55% 0.010 255)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <kbd style={{ fontFamily: 'var(--font-geist-mono, monospace)', fontSize: 10, padding: '1px 5px', background: '#f7f4ee', border: '1px solid oklch(91% 0.008 90)', borderRadius: 4 }}>↵</kbd>
-                        pour valider,
-                        <kbd style={{ fontFamily: 'var(--font-geist-mono, monospace)', fontSize: 10, padding: '1px 5px', background: '#f7f4ee', border: '1px solid oklch(91% 0.008 90)', borderRadius: 4 }}>,</kbd>
-                        pour séparer plusieurs compétences.
-                      </div>
                       {skillMsg && (
-                        <p style={{ marginTop: 8, fontSize: 12.5, color: skillMsg.includes('Erreur') ? 'oklch(58% 0.16 25)' : 'oklch(45% 0.13 150)' }}>
+                        <p className={`mt-3 text-sm ${skillMsg.includes('Erreur') ? 'text-[var(--error)]' : 'text-[var(--secondary)]'}`}>
                           {skillMsg}
                         </p>
                       )}
                     </div>
                   </div>
-                </section>
 
-              </div>
+                  <div className="space-y-8 lg:col-span-4">
+                    <section className="cd-card">
+                      <div className="cd-card-head">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13.5, fontWeight: 500, color: 'oklch(18% 0.012 255)' }}>
+                          <span style={{ fontFamily: 'var(--font-geist-mono, monospace)', fontSize: 10.5, color: 'oklch(55% 0.010 255)', letterSpacing: '0.08em' }}>02</span>
+                          Mon CV
+                        </div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          {cvLoaded && profile?.resumeUrl && (
+                            <a
+                              href={profile.resumeUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="cd-ghost-btn"
+                            >
+                              <IcoDownload /> Télécharger
+                            </a>
+                          )}
+                          <button
+                            className="cd-dark-btn"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={cvParsing}
+                          >
+                            <IcoUpload />
+                            {cvParsing ? 'Analyse…' : cvLoaded ? 'Remplacer' : 'Importer CV'}
+                          </button>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".pdf"
+                            style={{ display: 'none' }}
+                            onChange={e => {
+                              const file = e.target.files?.[0]
+                              if (file) handleCVFile(file)
+                              e.target.value = ''
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {cvLoaded ? (
+                        <div style={{ padding: 22, display: 'grid', gap: 18 }}>
+                          <div style={{
+                            display: 'flex', alignItems: 'center', gap: 14,
+                            padding: 14, borderRadius: 14, background: 'var(--surface-container-low)',
+                          }}>
+                            <div style={{
+                              width: 48, height: 60, background: 'var(--surface-container-lowest)',
+                              borderRadius: 8,
+                              flexShrink: 0, display: 'grid', placeItems: 'end center',
+                              paddingBottom: 6,
+                              boxShadow: '0 12px 24px -18px rgba(25,28,30,0.2)',
+                            }}>
+                              <span style={{
+                                fontFamily: 'var(--font-geist-mono, monospace)', fontSize: 9,
+                                background: 'var(--secondary)', color: 'white',
+                                padding: '2px 4px', borderRadius: 3, letterSpacing: '0.04em',
+                              }}>PDF</span>
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ margin: 0, fontSize: 14, fontWeight: 500, color: 'oklch(18% 0.012 255)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {cvFileName || 'CV.pdf'}
+                              </p>
+                              <div style={{ marginTop: 4, fontSize: 12, fontFamily: 'var(--font-geist-mono, monospace)', letterSpacing: '0.04em', color: 'oklch(45% 0.14 150)' }}>
+                                ✓ Analysé par l&apos;IA
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ background: 'var(--surface-container-low)', borderRadius: 14, padding: 12 }}>
+                            <div style={{
+                              padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8,
+                              background: 'var(--surface-container-lowest)',
+                              borderRadius: 10,
+                            }}>
+                              <span className="cd-extr-ai-chip">
+                                <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--secondary)', transform: 'rotate(45deg)', display: 'inline-block' }} />
+                                Extrait par l&apos;IA
+                              </span>
+                              <span style={{ fontSize: 13, color: 'var(--on-surface-variant)' }}>— verifie, modifiable</span>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+                              <div style={{ padding: '12px 14px', background: 'var(--surface-container-lowest)', borderRadius: 12 }}>
+                                <div style={{ fontFamily: 'var(--font-geist-mono, monospace)', fontSize: 10.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'oklch(55% 0.010 255)', marginBottom: 4 }}>
+                                  Années d&apos;expérience
+                                </div>
+                                <div style={{ fontFamily: 'var(--font-headline), sans-serif', fontSize: 22, lineHeight: 1, letterSpacing: '-0.01em', color: 'var(--primary)' }}>
+                                  {profile?.yearsOfExperience ? `${profile.yearsOfExperience} ans` : '—'}
+                                </div>
+                              </div>
+                              <div style={{ padding: '12px 14px', background: 'var(--surface-container-lowest)', borderRadius: 12 }}>
+                                <div style={{ fontFamily: 'var(--font-geist-mono, monospace)', fontSize: 10.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'oklch(55% 0.010 255)', marginBottom: 4 }}>
+                                  Localisation
+                                </div>
+                                <div style={{ fontSize: 14, color: 'var(--primary)', lineHeight: 1.4 }}>
+                                  {profile?.location || '—'}
+                                </div>
+                              </div>
+                              {langs && (
+                                <div style={{ padding: '12px 14px', background: 'var(--surface-container-lowest)', borderRadius: 12, gridColumn: '1 / -1' }}>
+                                  <div style={{ fontFamily: 'var(--font-geist-mono, monospace)', fontSize: 10.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'oklch(55% 0.010 255)', marginBottom: 4 }}>
+                                    Langues
+                                  </div>
+                                  <div style={{ fontSize: 14, color: 'var(--primary)', lineHeight: 1.4 }}>
+                                    {langs}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {cvMsg && (
+                            <p style={{ fontSize: 12.5, color: cvMsg.includes('Erreur') ? 'oklch(58% 0.16 25)' : 'oklch(45% 0.13 150)' }}>
+                              {cvMsg}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div style={{ padding: 26 }}>
+                          <div
+                            className="cd-dropzone"
+                            onDragOver={e => e.preventDefault()}
+                            onDrop={e => {
+                              e.preventDefault()
+                              const file = e.dataTransfer.files[0]
+                              if (file) handleCVFile(file)
+                            }}
+                          >
+                            <div style={{
+                              width: 46, height: 46, borderRadius: 14, margin: '0 auto 14px',
+                              display: 'grid', placeItems: 'center',
+                              background: '#fff', border: '1px solid oklch(91% 0.008 90)',
+                              color: 'oklch(28% 0.07 200)',
+                            }}>
+                              <IcoFile />
+                            </div>
+                            <div style={{ fontSize: 15, fontWeight: 500, color: 'oklch(18% 0.012 255)' }}>
+                              Importer votre CV
+                            </div>
+                            <div style={{ marginTop: 4, fontSize: 12.5, color: 'oklch(55% 0.010 255)' }}>
+                              Glissez un fichier PDF, ou cliquez sur le bouton ci-dessus
+                            </div>
+                            {cvMsg && (
+                              <p style={{ marginTop: 10, fontSize: 12.5, color: cvMsg.includes('Erreur') ? 'oklch(58% 0.16 25)' : 'oklch(45% 0.13 150)' }}>
+                                {cvMsg}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </section>
+
+                    <div className="relative overflow-hidden rounded-xl bg-[var(--secondary)] p-8 text-white">
+                      <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
+                      <h3 className="mb-4 flex items-center gap-2 font-headline text-xl font-bold">
+                        Nexus Insight
+                      </h3>
+                      <p className="mb-6 text-sm leading-relaxed opacity-90">{insightLine}</p>
+                      <Link
+                        href="/jobs"
+                        className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest transition hover:gap-3"
+                      >
+                        Voir le rapport detaille
+                        <span className="text-sm">→</span>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </main>
         </div>
       </div>
     </>

@@ -1,8 +1,25 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f7f9fb;
+  --foreground: #191c1e;
+  --primary: #001e40;
+  --primary-container: #003366;
+  --secondary: #006875;
+  --secondary-bright: #00daf3;
+  --tertiary: #69ff87;
+  --surface: #f7f9fb;
+  --surface-container-low: #f2f4f6;
+  --surface-container-lowest: #ffffff;
+  --surface-container-highest: #e0e3e5;
+  --outline-variant: #c3c6d1;
+  --on-surface: #191c1e;
+  --on-surface-variant: #43474f;
+  --on-primary: #ffffff;
+  --font-headline: "Manrope", sans-serif;
+  --font-body: "Inter", sans-serif;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -12,15 +29,43 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: var(--surface);
+  color: var(--on-surface);
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+h1,
+h2,
+h3,
+.font-headline {
+  font-family: var(--font-headline), "Inter", sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.font-body {
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+}
+
+.label-uppercase {
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.glass-nav {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+}
+
+.editorial-shadow {
+  box-shadow: 0 28px 56px -18px rgba(25, 28, 30, 0.08);
+}
+
+.ambient-shadow {
+  box-shadow: 0 30px 60px -24px rgba(25, 28, 30, 0.06);
+}
+
+.soft-outline {
+  border: 1px solid color-mix(in srgb, var(--outline-variant) 18%, transparent);
 }

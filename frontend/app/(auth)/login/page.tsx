@@ -1,18 +1,21 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRef, useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 type Role = 'CANDIDATE' | 'RECRUITER'
 type View = 'login' | 'register'
 
 const API = 'http://localhost:8081'
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const msgTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const [view, setView] = useState<View>('login')
+  const [view, setView] = useState<View>(() =>
+    searchParams.get('view') === 'register' ? 'register' : 'login'
+  )
   const [role, setRole] = useState<Role>('CANDIDATE')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -140,272 +143,290 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* ── Left branding panel ── */}
-      <div className="relative hidden lg:flex w-1/2 flex-col bg-[#efeae0] overflow-hidden p-14">
-        {/* Logo */}
-        <div className="relative z-10 flex items-center gap-3">
-          <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
-              <rect width="36" height="36" rx="9" fill="#15191f"/>
-              <path d="M8 8H28V13H21V28H15V13H8V8Z" fill="#ffffff"/>
-            </svg>
-          <span
-            className="text-[#15191f] font-semibold leading-none"
-            style={{ fontFamily: 'Georgia, serif', fontSize: '26px' }}
-          >
-            TunHire
-          </span>
-        </div>
+    <div className="min-h-screen bg-[var(--surface)] text-[var(--on-surface)]">
+      <main className="relative flex min-h-screen flex-col overflow-hidden lg:flex-row">
+        <section className="relative hidden items-end overflow-hidden bg-[var(--primary)] px-16 py-20 lg:flex lg:w-[52%]">
+          <div className="absolute inset-0">
+            <img
+              alt="Equipe tunisienne dans un hub tech moderne"
+              className="h-full w-full object-cover opacity-70"
+              src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1400&q=80"
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(0,30,64,1),rgba(0,30,64,0.7),transparent)]" />
+          </div>
+          <div className="absolute -left-24 -bottom-24 h-72 w-72 rounded-full bg-[color:var(--secondary-bright)] opacity-20 blur-3xl" />
+          <div className="absolute -right-20 top-10 h-80 w-80 rounded-full bg-[color:var(--tertiary)] opacity-[0.15] blur-3xl" />
 
-        {/* Tagline */}
-        <div className="relative z-10 mt-auto mb-20">
-          <p
-            className="text-[#15191f] leading-[1.05]"
-            style={{ fontFamily: 'Georgia, serif', fontSize: '80px', fontStyle: 'italic' }}
-          >
-            Le talent
-          </p>
-          <p
-            className="text-[#15191f] leading-[1.05]"
-            style={{ fontFamily: 'Georgia, serif', fontSize: '80px' }}
-          >
-            tunisien.
-          </p>
-        </div>
-
-        {/* Decorative teal circle */}
-        <div
-          className="absolute rounded-full bg-[#1FA39F] pointer-events-none"
-          style={{
-            width: '560px',
-            height: '560px',
-            bottom: '-100px',
-            right: '-140px',
-            opacity: 0.18,
-          }}
-        />
-      </div>
-
-      {/* ── Right form panel ── */}
-      <div className="flex flex-1 items-center justify-center bg-[#f7f4ee] p-8">
-        <div className="w-full max-w-[400px]">
-          {/* Mobile-only logo */}
-          <div className="flex lg:hidden items-center gap-2 mb-8">
-            <svg width="32" height="32" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="36" height="36" rx="9" fill="#15191f"/>
-              <path d="M8 8H28V13H21V28H15V13H8V8Z" fill="#ffffff"/>
-            </svg>
-            <span
-              className="text-[#15191f] font-semibold"
-              style={{ fontFamily: 'Georgia, serif', fontSize: '22px' }}
-            >
-              TunHire
+          <div className="relative z-10 max-w-xl">
+            <span className="label-uppercase text-[10px] font-bold text-[var(--secondary-bright)]">
+              Intelligence & excellence locale
             </span>
-          </div>
-
-          {/* Heading */}
-          <h1 className="text-[22px] font-semibold text-[#15191f] mb-1">
-            {view === 'login' ? 'Connexion' : 'Créer un compte'}
-          </h1>
-          <p className="text-sm text-[#888] mb-6">
-            {view === 'login'
-              ? 'Bienvenue, connectez-vous à votre compte.'
-              : 'Rejoignez la communauté TunHire.'}
-          </p>
-
-          {/* Role cards */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            {(['CANDIDATE', 'RECRUITER'] as Role[]).map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setRole(r)}
-                className={[
-                  'flex flex-col gap-1 p-4 rounded-xl border-2 text-left transition-colors bg-white',
-                  role === r ? 'border-[#15191f]' : 'border-[#e2ddd2]',
-                  'cursor-pointer hover:border-[#aaa]',
-                ].join(' ')}
-              >
-                <span className="text-xl">{r === 'CANDIDATE' ? '👤' : '🏢'}</span>
-                <span className="text-[13px] font-semibold text-[#15191f]">
-                  {r === 'CANDIDATE' ? 'Candidat' : 'Recruteur'}
-                </span>
-                <span className="text-[11px] text-[#999]">
-                  {r === 'CANDIDATE' ? 'Je cherche un emploi' : 'Je recrute des talents'}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            {/* Prénom + Nom (register only) */}
-            {view === 'register' && (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-medium text-[#15191f] mb-1.5">
-                    Prénom
-                  </label>
-                  <input
-                    type="text"
-                    value={firstName}
-                    onChange={(e) => { setFirstName(e.target.value); clearFieldError('firstName') }}
-                    placeholder="Prénom"
-                    className={`w-full h-14 px-4 rounded-[10px] border bg-white text-[#15191f] text-sm placeholder:text-[#ccc] focus:outline-none transition-colors ${fieldErrors.firstName ? 'border-red-400 focus:border-red-400' : 'border-[#e2ddd2] focus:border-[#15191f]'}`}
-                  />
-                  {fieldErrors.firstName && (
-                    <p className="text-red-500 text-[11px] mt-1">{fieldErrors.firstName}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-[#15191f] mb-1.5">
-                    Nom
-                  </label>
-                  <input
-                    type="text"
-                    value={lastName}
-                    onChange={(e) => { setLastName(e.target.value); clearFieldError('lastName') }}
-                    placeholder="Nom"
-                    className={`w-full h-14 px-4 rounded-[10px] border bg-white text-[#15191f] text-sm placeholder:text-[#ccc] focus:outline-none transition-colors ${fieldErrors.lastName ? 'border-red-400 focus:border-red-400' : 'border-[#e2ddd2] focus:border-[#15191f]'}`}
-                  />
-                  {fieldErrors.lastName && (
-                    <p className="text-red-500 text-[11px] mt-1">{fieldErrors.lastName}</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Email */}
-            <div>
-              <label className="block text-[11px] font-medium text-[#15191f] mb-1.5">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => { setEmail(e.target.value); clearFieldError('email') }}
-                required
-                placeholder="votre@email.com"
-                className={`w-full h-14 px-4 rounded-[10px] border bg-white text-[#15191f] text-sm placeholder:text-[#ccc] focus:outline-none transition-colors ${fieldErrors.email ? 'border-red-400 focus:border-red-400' : 'border-[#e2ddd2] focus:border-[#15191f]'}`}
-              />
-              {fieldErrors.email && (
-                <p className="text-red-500 text-[11px] mt-1">{fieldErrors.email}</p>
-              )}
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className="block text-[11px] font-medium text-[#15191f] mb-1.5">
-                Mot de passe
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); clearFieldError('password') }}
-                  required
-                  placeholder="••••••••"
-                  className={`w-full h-14 px-4 pr-12 rounded-[10px] border bg-white text-[#15191f] text-sm placeholder:text-[#ccc] focus:outline-none transition-colors ${fieldErrors.password ? 'border-red-400 focus:border-red-400' : 'border-[#e2ddd2] focus:border-[#15191f]'}`}
+            <h1 className="mt-6 font-headline text-5xl font-extrabold leading-tight text-white">
+              Le hub premium du recrutement tunisien,
+              <span className="block text-[var(--secondary-bright)]">orchestré par l'IA.</span>
+            </h1>
+            <p className="mt-6 text-lg leading-relaxed text-white/75">
+              Rejoignez un écosystème éditorial où chaque profil est évalué avec précision, éthique et ambition.
+            </p>
+            <div className="mt-10 flex items-center gap-6">
+              <div className="flex -space-x-3">
+                <img
+                  alt="Talent tech"
+                  className="h-10 w-10 rounded-full border-2 border-[var(--primary)] object-cover"
+                  src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? 'Cacher le mot de passe' : 'Voir le mot de passe'}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#aaa] hover:text-[#15191f] transition-colors"
-                >
-                  {showPassword ? (
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
-                    </svg>
-                  ) : (
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  )}
-                </button>
+                <img
+                  alt="Recruteuse"
+                  className="h-10 w-10 rounded-full border-2 border-[var(--primary)] object-cover"
+                  src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80"
+                />
+                <img
+                  alt="Equipe IA"
+                  className="h-10 w-10 rounded-full border-2 border-[var(--primary)] object-cover"
+                  src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=200&q=80"
+                />
               </div>
-              {fieldErrors.password && (
-                <p className="text-red-500 text-[11px] mt-1">{fieldErrors.password}</p>
+              <p className="text-sm font-medium text-white/70">
+                5 000+ talents et recruteurs premium.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="relative flex flex-1 items-center justify-center px-6 py-16 sm:px-12 lg:px-16">
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(0,218,243,0.12),_transparent_55%)]" />
+          <div className="w-full max-w-xl">
+            <div className="flex flex-wrap items-center justify-between gap-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--primary)] text-white">
+                  TH
+                </div>
+                <div>
+                  <p className="text-lg font-black text-[var(--primary)]">TunHire</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--on-surface-variant)]">
+                    Cognitive architect
+                  </p>
+                </div>
+              </div>
+              <span className="label-uppercase text-[10px] font-bold text-[var(--secondary)]">
+                Acces securise
+              </span>
+            </div>
+
+            <div className="mt-10 rounded-[2.5rem] bg-[var(--surface-container-lowest)] p-8 editorial-shadow sm:p-10">
+              <span className="label-uppercase text-[10px] font-bold text-[var(--secondary)]">
+                {view === 'login' ? 'Connexion' : 'Inscription'}
+              </span>
+              <h1 className="mt-4 font-headline text-3xl font-extrabold text-[var(--primary)] sm:text-4xl">
+                {view === 'login'
+                  ? 'Heureux de vous revoir.'
+                  : 'Creez votre presence sur TunHire.'}
+              </h1>
+              <p className="mt-3 text-sm text-[var(--on-surface-variant)]">
+                {view === 'login'
+                  ? 'Accedez a votre tableau de bord, suivez vos opportunites et vos scores IA.'
+                  : 'Un espace editorial pour valoriser votre parcours et activer les bons signaux IA.'}
+              </p>
+
+              <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {(['CANDIDATE', 'RECRUITER'] as Role[]).map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setRole(r)}
+                    className={[
+                      'group relative overflow-hidden rounded-2xl p-4 text-left transition-all',
+                      role === r
+                        ? 'bg-[var(--primary)] text-white'
+                        : 'bg-[var(--surface-container-low)] text-[var(--primary)]',
+                      'soft-outline hover:-translate-y-0.5',
+                    ].join(' ')}
+                  >
+                    <div className="absolute -right-8 -top-8 h-16 w-16 rounded-full bg-[color:var(--secondary-bright)] opacity-20 blur-2xl" />
+                    <span className="text-2xl">{r === 'CANDIDATE' ? '👤' : '🏢'}</span>
+                    <p className="mt-3 text-sm font-semibold">
+                      {r === 'CANDIDATE' ? 'Candidat' : 'Recruteur'}
+                    </p>
+                    <p className={role === r ? 'text-xs text-white/70' : 'text-xs text-[var(--on-surface-variant)]'}>
+                      {r === 'CANDIDATE' ? 'Je cherche un emploi' : 'Je recrute des talents'}
+                    </p>
+                  </button>
+                ))}
+              </div>
+
+              <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-5">
+                {view === 'register' && (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--on-surface-variant)]">
+                        Prenom
+                      </label>
+                      <div className="group relative mt-2">
+                        <input
+                          type="text"
+                          value={firstName}
+                          onChange={(e) => {
+                            setFirstName(e.target.value)
+                            clearFieldError('firstName')
+                          }}
+                          placeholder="Prenom"
+                          className="h-14 w-full rounded-2xl bg-[var(--surface-container-lowest)] px-5 text-sm font-medium text-[var(--on-surface)] placeholder:text-[var(--on-surface-variant)] focus:outline-none"
+                        />
+                        <div className="pointer-events-none absolute inset-0 rounded-2xl soft-outline transition-all group-focus-within:ring-2 group-focus-within:ring-[color:var(--secondary)] group-focus-within:ring-opacity-25" />
+                      </div>
+                      {fieldErrors.firstName && (
+                        <p className="mt-1 text-[11px] text-[#ba1a1a]">{fieldErrors.firstName}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--on-surface-variant)]">
+                        Nom
+                      </label>
+                      <div className="group relative mt-2">
+                        <input
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => {
+                            setLastName(e.target.value)
+                            clearFieldError('lastName')
+                          }}
+                          placeholder="Nom"
+                          className="h-14 w-full rounded-2xl bg-[var(--surface-container-lowest)] px-5 text-sm font-medium text-[var(--on-surface)] placeholder:text-[var(--on-surface-variant)] focus:outline-none"
+                        />
+                        <div className="pointer-events-none absolute inset-0 rounded-2xl soft-outline transition-all group-focus-within:ring-2 group-focus-within:ring-[color:var(--secondary)] group-focus-within:ring-opacity-25" />
+                      </div>
+                      {fieldErrors.lastName && (
+                        <p className="mt-1 text-[11px] text-[#ba1a1a]">{fieldErrors.lastName}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--on-surface-variant)]">
+                    Email
+                  </label>
+                  <div className="group relative mt-2">
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value)
+                        clearFieldError('email')
+                      }}
+                      placeholder="nom@exemple.tn"
+                      className="h-14 w-full rounded-2xl bg-[var(--surface-container-lowest)] px-5 text-sm font-medium text-[var(--on-surface)] placeholder:text-[var(--on-surface-variant)] focus:outline-none"
+                    />
+                    <div className="pointer-events-none absolute inset-0 rounded-2xl soft-outline transition-all group-focus-within:ring-2 group-focus-within:ring-[color:var(--secondary)] group-focus-within:ring-opacity-25" />
+                  </div>
+                  {fieldErrors.email && (
+                    <p className="mt-1 text-[11px] text-[#ba1a1a]">{fieldErrors.email}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--on-surface-variant)]">
+                    Mot de passe
+                  </label>
+                  <div className="group relative mt-2">
+                    <div className="flex h-14 items-center gap-3 rounded-2xl bg-[var(--surface-container-lowest)] px-5">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value)
+                          clearFieldError('password')
+                        }}
+                        placeholder="••••••••"
+                        className="flex-1 bg-transparent text-sm font-medium text-[var(--on-surface)] placeholder:text-[var(--on-surface-variant)] focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--secondary)]"
+                      >
+                        {showPassword ? 'Masquer' : 'Afficher'}
+                      </button>
+                    </div>
+                    <div className="pointer-events-none absolute inset-0 rounded-2xl soft-outline transition-all group-focus-within:ring-2 group-focus-within:ring-[color:var(--secondary)] group-focus-within:ring-opacity-25" />
+                  </div>
+                  {fieldErrors.password && (
+                    <p className="mt-1 text-[11px] text-[#ba1a1a]">{fieldErrors.password}</p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="mt-2 h-14 rounded-2xl bg-[var(--primary)] text-sm font-semibold text-[var(--on-primary)] shadow-lg transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+                >
+                  {loading
+                    ? view === 'login'
+                      ? 'Connexion...'
+                      : 'Creation...'
+                    : view === 'login'
+                      ? 'Se connecter'
+                      : 'Creer mon compte'}
+                </button>
+              </form>
+
+              {message && (
+                <div
+                  className={`mt-5 rounded-2xl px-4 py-3 text-[13px] ${
+                    message.type === 'error'
+                      ? 'bg-[#ffdad6] text-[#93000a]'
+                      : 'bg-[#d5e3ff] text-[var(--primary)]'
+                  }`}
+                >
+                  {message.text}
+                </div>
               )}
+
+              <p className="mt-6 text-center text-[13px] text-[var(--on-surface-variant)]">
+                {view === 'login' ? (
+                  <>
+                    Pas encore de compte ?{' '}
+                    <button
+                      type="button"
+                      onClick={() => switchView('register')}
+                      className="font-semibold text-[var(--primary)] hover:underline"
+                    >
+                      Creer un compte
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    Deja un compte ?{' '}
+                    <button
+                      type="button"
+                      onClick={() => switchView('login')}
+                      className="font-semibold text-[var(--primary)] hover:underline"
+                    >
+                      Se connecter
+                    </button>
+                  </>
+                )}
+              </p>
             </div>
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full h-14 bg-[#15191f] text-white rounded-[10px] font-medium text-sm mt-1 disabled:opacity-60 hover:bg-[#2d3748] active:bg-[#1a202c] transition-colors"
-            >
-              {loading
-                ? view === 'login'
-                  ? 'Connexion...'
-                  : 'Création...'
-                : view === 'login'
-                  ? 'Se connecter'
-                  : 'Créer mon compte'}
-            </button>
-          </form>
-
-          {/* Message box */}
-          {message && (
-            <div
-              className={`mt-4 px-4 py-3 rounded-[10px] text-[13px] border ${
-                message.type === 'error'
-                  ? 'bg-red-50 border-red-200 text-red-700'
-                  : 'bg-green-50 border-green-200 text-green-700'
-              }`}
-            >
-              {message.text}
-            </div>
-          )}
-
-          {/* View toggle */}
-          <p className="text-[13px] text-center mt-5 text-[#888]">
-            {view === 'login' ? (
-              <>
-                Pas encore de compte ?{' '}
-                <button
-                  type="button"
-                  onClick={() => switchView('register')}
-                  className="text-[#15191f] font-semibold hover:underline"
-                >
-                  Créer un compte
-                </button>
-              </>
-            ) : (
-              <>
-                Déjà un compte ?{' '}
-                <button
-                  type="button"
-                  onClick={() => switchView('login')}
-                  className="text-[#15191f] font-semibold hover:underline"
-                >
-                  Se connecter
-                </button>
-              </>
-            )}
-          </p>
-        </div>
-      </div>
+            <p className="mt-6 text-center text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--on-surface-variant)]">
+              © 2026 TunHire. Excellence IA pour le recrutement tunisien.
+            </p>
+          </div>
+        </section>
+      </main>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[var(--surface)] flex items-center justify-center text-[var(--on-surface-variant)] text-sm">
+        Chargement...
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   )
 }

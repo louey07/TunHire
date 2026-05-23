@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { getUser, logout } from '@/lib/auth'
+import { getUser, logoutWithServer } from '@/lib/auth'
 
 type User = {
   id: number
@@ -114,16 +114,20 @@ export default function Navbar() {
     setUser(getUser())
   }, [])
 
+  const handleLogout = () => {
+    void logoutWithServer()
+  }
+
   const candidateDropdownItems = [
     { label: 'Mon profil', href: '/dashboard/candidate' },
     { divider: true as const },
-    { label: 'Déconnexion', onClick: logout },
+    { label: 'Déconnexion', onClick: handleLogout },
   ]
 
   const recruiterDropdownItems = [
     { label: 'Mon entreprise', href: '/dashboard/recruiter' },
     { divider: true as const },
-    { label: 'Déconnexion', onClick: logout },
+    { label: 'Déconnexion', onClick: handleLogout },
   ]
 
   return (
