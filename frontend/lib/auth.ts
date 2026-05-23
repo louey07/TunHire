@@ -1,3 +1,5 @@
+import { apiPost } from '@/lib/api'
+
 type User = {
   id: number
   email: string
@@ -26,10 +28,24 @@ export function isLoggedIn(): boolean {
   return !!getToken()
 }
 
-export function logout(): void {
+function clearAuthState(): void {
   localStorage.removeItem('tunhire_token')
   localStorage.removeItem('tunhire_user')
   document.cookie =
     'tunhire_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax'
   window.location.href = '/login'
+}
+
+export function logout(): void {
+  clearAuthState()
+}
+
+export async function logoutWithServer(): Promise<void> {
+  try {
+    await apiPost('/auth/logout')
+  } catch {
+    // Ignore server errors; always clear local session.
+  } finally {
+    clearAuthState()
+  }
 }

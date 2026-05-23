@@ -45,6 +45,21 @@ export async function apiPut(endpoint: string, body: object) {
   return res.json()
 }
 
+export async function apiPatch(endpoint: string, body?: object) {
+  const res = await fetch(`${BASE_URL}${endpoint}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${getToken()}`,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  })
+  if (res.status === 204 || res.headers.get('content-length') === '0') {
+    return { success: true }
+  }
+  return res.json()
+}
+
 export async function apiDelete(endpoint: string) {
   const res = await fetch(`${BASE_URL}${endpoint}`, {
     method: 'DELETE',
