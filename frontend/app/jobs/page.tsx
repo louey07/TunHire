@@ -181,10 +181,9 @@ export default function JobsPage() {
     );
   }
 
-  function getMatchScore(job: Job) {
+  function getMatchScore(job: Job): number | null {
     if (typeof job.aiScore === "number") return job.aiScore;
-    const base = 84 + (Number(job.id) % 15);
-    return Math.min(99, Math.max(80, base));
+    return null;
   }
 
   async function applyToJob(jobId: number) {
@@ -233,14 +232,14 @@ export default function JobsPage() {
           )
         : true,
     )
-    .filter((j) => getMatchScore(j) >= minMatch);
+    .filter((j) => user?.role !== "CANDIDATE" || (getMatchScore(j) ?? -1) >= minMatch);
 
   const selectedJob = useMemo(() => {
     if (!filtered.length) return null;
     return filtered.find((job) => job.id === selectedId) ?? filtered[0];
   }, [filtered, selectedId]);
 
-  const selectedScore = selectedJob ? getMatchScore(selectedJob) : 94;
+  const selectedScore = selectedJob ? getMatchScore(selectedJob) : null;
   const isCandidate = user?.role === "CANDIDATE";
   const hasAppliedToSelected = selectedJob
     ? appliedJobIds.includes(selectedJob.id)
@@ -471,9 +470,11 @@ export default function JobsPage() {
                           : "bg-[var(--surface-container-low)] hover:bg-[var(--surface-container-lowest)]"
                       }`}
                     >
-                      <div className="absolute right-0 top-0 rounded-bl-2xl bg-gradient-to-r from-[var(--secondary)] to-[var(--tertiary)] px-3 py-1 text-[10px] font-bold uppercase text-white">
-                        {score}% match
-                      </div>
+                      {score !== null && (
+                        <div className="absolute right-0 top-0 rounded-bl-2xl bg-gradient-to-r from-[var(--secondary)] to-[var(--tertiary)] px-3 py-1 text-[10px] font-bold uppercase text-white">
+                          {score}% match
+                        </div>
+                      )}
                       <div className="flex items-start gap-5 xl:gap-6">
                         <div className="flex h-14 w-14 items-center justify-center rounded-[1.35rem] bg-[var(--surface-container-highest)] text-sm font-bold text-[var(--primary)] xl:h-16 xl:w-16">
                           {job.title.slice(0, 2).toUpperCase()}
@@ -576,17 +577,19 @@ export default function JobsPage() {
                           ? `${selectedJob.companyName} · ${selectedJob.location}`
                           : selectedJob.location}
                       </p>
-                      <div className="mt-6 flex items-center gap-4">
-                        <div className="h-2 flex-1 rounded-full bg-white/20">
-                          <div
-                            className="h-2 rounded-full bg-gradient-to-r from-[var(--secondary)] to-[var(--tertiary)]"
-                            style={{ width: `${selectedScore}%` }}
-                          />
+                      {selectedScore !== null && (
+                        <div className="mt-6 flex items-center gap-4">
+                          <div className="h-2 flex-1 rounded-full bg-white/20">
+                            <div
+                              className="h-2 rounded-full bg-gradient-to-r from-[var(--secondary)] to-[var(--tertiary)]"
+                              style={{ width: `${selectedScore}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-bold">
+                            {selectedScore}% match
+                          </span>
                         </div>
-                        <span className="text-xs font-bold">
-                          {selectedScore}% match
-                        </span>
-                      </div>
+                      )}
                     </div>
                   </div>
 
@@ -636,7 +639,7 @@ export default function JobsPage() {
                           Compatibilite
                         </p>
                         <p className="mt-3 text-sm font-semibold text-[var(--primary)] xl:text-[15px]">
-                          {selectedScore}%
+                          {selectedScore !== null ? `${selectedScore}%` : "—"}
                         </p>
                       </div>
                     </div>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getToken } from "@/lib/auth";
-import { apiGet } from "@/lib/api";
+import { apiGet, apiPatch } from "@/lib/api";
 import Navbar from "@/components/Navbar";
 import RecruiterSidebar from "@/components/RecruiterSidebar";
 
@@ -74,16 +74,7 @@ export default function CandidateDetailPage() {
     if (!app) return;
     setUpdating(true);
     try {
-      await fetch(
-        `http://localhost:8081/applications/${app.id}/status?status=${newStatus}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${getToken()}`,
-          },
-        },
-      );
+      await apiPatch(`/applications/${app.id}/status?status=${newStatus}`);
       setApp({ ...app, status: newStatus });
     } catch {}
     setUpdating(false);
