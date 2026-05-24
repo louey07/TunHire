@@ -62,10 +62,9 @@ function formatDate(value?: string) {
   }).format(date)
 }
 
-function scoreFor(app: Application) {
+function scoreFor(app: Application): number | null {
   if (typeof app.score === 'number') return Math.round(app.score)
-  const base = 76 + (app.id % 18)
-  return Math.min(99, Math.max(62, base))
+  return null
 }
 
 function SearchIcon() {
@@ -240,10 +239,12 @@ export default function CandidateApplicationsPage() {
     })
   }, [applications, jobsById, query])
 
-  const scores = applications.map(scoreFor)
-  const averageScore = scores.length
-    ? Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length)
-    : 92
+  const realScores = applications
+    .map((app) => app.score)
+    .filter((s): s is number => typeof s === 'number')
+  const averageScore = realScores.length
+    ? Math.round(realScores.reduce((sum, value) => sum + value, 0) / realScores.length)
+    : null
   const interviewCount = applications.filter((app) => INTERVIEW_STATUSES.has((app.status || '').toUpperCase())).length
   const activeCount = applications.filter((app) => !['REJECTED', 'WITHDRAWN', 'CANCELLED'].includes((app.status || '').toUpperCase())).length
 
@@ -464,7 +465,11 @@ export default function CandidateApplicationsPage() {
                         </span>
                       </div>
                       <div className="lg:col-span-2 lg:flex lg:justify-center">
-                        <ScoreRing score={score} />
+                        {score !== null ? (
+                          <ScoreRing score={score} />
+                        ) : (
+                          <span className="text-sm text-[var(--on-surface-variant)]">—</span>
+                        )}
                       </div>
                       <div className="lg:col-span-2 lg:text-right">
                         <Link
@@ -494,7 +499,7 @@ export default function CandidateApplicationsPage() {
               Apercu IA
             </span>
             <h3 className="mt-4 max-w-xl font-headline text-2xl font-extrabold">
-              Votre profil correspond a {averageScore}% des nouvelles opportunites IA.
+              Votre profil correspond a {averageScore !== null ? `${averageScore}%` : 'une forte proportion'} des nouvelles opportunites IA.
             </h3>
             <p className="mt-4 max-w-xl text-sm text-white/70">
               Base sur vos candidatures recentes, TunHire recommande de cibler les entreprises SaaS et fintech en pleine croissance.
@@ -518,7 +523,7 @@ export default function CandidateApplicationsPage() {
             <div className="mt-6 h-2 w-full rounded-full bg-[var(--surface-container-high)]">
               <div
                 className="h-2 rounded-full bg-[var(--tertiary)]"
-                style={{ width: `${Math.min(100, Math.max(20, averageScore))}%` }}
+                style={{ width: `${averageScore !== null ? Math.min(100, Math.max(20, averageScore)) : 0}%` }}
               />
             </div>
           </div>
