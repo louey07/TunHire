@@ -34,6 +34,7 @@ public class DefaultJobSummaryProvider implements JobSummaryProvider {
             job.getId(),
             job.getTitle(),
             job.getLocation(),
+            job.getWorkMode() != null ? job.getWorkMode().name() : "ON_SITE",
             job.getStatus() != null ? job.getStatus().name() : null
         );
     }

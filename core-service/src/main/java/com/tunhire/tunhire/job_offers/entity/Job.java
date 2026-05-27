@@ -54,6 +54,10 @@ public class Job {
 
     private String experienceLevel;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "work_mode", nullable = false)
+    private WorkMode workMode;
+
     private BigDecimal salaryMin;
 
     private BigDecimal salaryMax;

@@ -9,6 +9,7 @@ import com.tunhire.tunhire.common.AiServiceClient;
 import com.tunhire.tunhire.common.CandidateSkillsDto;
 import com.tunhire.tunhire.common.CandidateSummaryDto;
 import com.tunhire.tunhire.common.ResourceNotFoundException;
+import com.tunhire.tunhire.companies.DashboardApplicationItem;
 import com.tunhire.tunhire.job_offers.repository.JobRepository;
 
 import java.util.ArrayList;
@@ -86,6 +87,19 @@ public class ApplicationService {
         return toSummaryList(applicationRepository.findByJobIdIn(jobIds));
     }
 
+    public List<DashboardApplicationItem> getDashboardApplicationsForCompany(
+        Long companyId,
+        Map<Long, String> jobTitlesById
+    ) {
+        List<Long> jobIds = jobLookupService.getJobIdsByCompanyId(companyId);
+        if (jobIds == null || jobIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return applicationRepository.findByJobIdIn(jobIds).stream()
+            .map(app -> toDashboardItem(app, jobTitlesById))
+            .collect(Collectors.toList());
+    }
+
     public ApplicationResponse updateStatus(Long applicationId, ApplicationStatus status, Long recruiterId) {
         Application application = applicationRepository
             .findById(applicationId)
@@ -97,6 +111,20 @@ public class ApplicationService {
 
         application.setStatus(status);
         return toResponse(applicationRepository.save(application));
+    }
+
+    public void deleteForCandidate(Long applicationId, Long userId) {
+        Application application = applicationRepository
+            .findById(applicationId)
+            .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
+
+        if (!application.getUserId().equals(userId)) {
+            throw new IllegalArgumentException(
+                "You can only delete your own applications"
+            );
+        }
+
+        applicationRepository.delete(application);
     }
 
     public List<RankedApplicationResponse> getRankedByJobId(Long jobId) {
@@ -176,6 +204,30 @@ public class ApplicationService {
             summary != null ? summary.firstName() : "Unknown",
             summary != null ? summary.lastName() : "Unknown",
             summary != null ? summary.resumeUrl() : null,
+            application.getStatus(),
+            application.getCreatedAt()
+        );
+    }
+
+    private DashboardApplicationItem toDashboardItem(
+        Application application,
+        Map<Long, String> jobTitlesById
+    ) {
+        CandidateSummaryDto summary =
+            candidateProfileProvider.getCandidateSummary(
+                application.getUserId()
+            );
+        String jobTitle = jobTitlesById.getOrDefault(
+            application.getJobId(),
+            "Offre"
+        );
+        return new DashboardApplicationItem(
+            application.getId(),
+            application.getJobId(),
+            jobTitle,
+            application.getUserId(),
+            summary != null ? summary.firstName() : "Unknown",
+            summary != null ? summary.lastName() : "Unknown",
             application.getStatus(),
             application.getCreatedAt()
         );

@@ -1,13 +1,11 @@
 package com.tunhire.tunhire.companies.service;
 
 import com.tunhire.tunhire.common.ResourceNotFoundException;
-import com.tunhire.tunhire.common.CompanyCreatedEvent;
 import com.tunhire.tunhire.companies.CompanyCreateRequest;
 import com.tunhire.tunhire.companies.CompanyResponse;
 import com.tunhire.tunhire.companies.CompanyUpdateRequest;
 import com.tunhire.tunhire.companies.entity.Company;
 import com.tunhire.tunhire.companies.repository.CompanyRepository;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,12 +15,10 @@ public class CompanyService {
 
     private final CompanyRepository companyRepository;
     private final MembershipService membershipService;
-    private final ApplicationEventPublisher events;
 
-    public CompanyService(CompanyRepository companyRepository, MembershipService membershipService, ApplicationEventPublisher events) {
+    public CompanyService(CompanyRepository companyRepository, MembershipService membershipService) {
         this.companyRepository = companyRepository;
         this.membershipService = membershipService;
-        this.events = events;
     }
 
     public CompanyResponse create(CompanyCreateRequest request, Long currentUserId) {
@@ -39,9 +35,8 @@ public class CompanyService {
         company.setWebsite(request.website());
         company.setLocation(request.location());
         Company savedCompany = companyRepository.save(company);
-        
-        // Add the creator as the OWNER asynchronously
-        events.publishEvent(new CompanyCreatedEvent(savedCompany.getId(), currentUserId));
+
+        membershipService.addCreatorAsAdmin(savedCompany.getId(), currentUserId);
 
         return toResponse(savedCompany);
     }

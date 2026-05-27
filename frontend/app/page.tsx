@@ -485,36 +485,11 @@ export default function Home() {
               L'intelligence du recrutement pour le marché tunisien. Des décisions plus rapides, plus justes, plus humaines.
             </p>
           </div>
-          <div>
-            <h5 className="text-sm font-bold text-[var(--primary)]">Produit</h5>
-            <ul className="mt-4 space-y-3 text-xs uppercase tracking-[0.2em] text-[var(--on-surface-variant)]">
-              <li>Matching IA</li>
-              <li>Audit de compétences</li>
-              <li>Insights salaires</li>
-            </ul>
-          </div>
-          <div>
-            <h5 className="text-sm font-bold text-[var(--primary)]">Ressources</h5>
-            <ul className="mt-4 space-y-3 text-xs uppercase tracking-[0.2em] text-[var(--on-surface-variant)]">
-              <li>Centre d'aide</li>
-              <li>Tendances marché</li>
-              <li>Success stories</li>
-            </ul>
-          </div>
-          <div>
-            <h5 className="text-sm font-bold text-[var(--primary)]">Contact</h5>
-            <ul className="mt-4 space-y-3 text-xs uppercase tracking-[0.2em] text-[var(--on-surface-variant)]">
-              <li>contact@tunhire.tn</li>
-              <li>+216 70 000 000</li>
-              <li>LinkedIn / TunHire</li>
-            </ul>
-          </div>
+  
         </div>
         <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-4 px-6 pb-10 text-xs uppercase tracking-[0.2em] text-[var(--on-surface-variant)] md:flex-row">
           <p>© 2026 TunHire. Excellence IA pour le recrutement tunisien.</p>
           <div className="flex items-center gap-6">
-            <span>Confidentialité</span>
-            <span>Conditions</span>
           </div>
         </div>
       </footer>

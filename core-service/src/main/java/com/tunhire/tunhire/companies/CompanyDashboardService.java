@@ -1,8 +1,10 @@
 package com.tunhire.tunhire.companies;
-import com.tunhire.tunhire.applications.ApplicationSummary;
 import com.tunhire.tunhire.applications.ApplicationService;
+import com.tunhire.tunhire.applications.ApplicationSummary;
 import com.tunhire.tunhire.companies.service.MembershipService;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import com.tunhire.tunhire.companies.service.CompanyService;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,8 +38,13 @@ public class CompanyDashboardService {
         List<JobSummaryDto> jobs = jobSummaryProvider.getJobsByCompanyId(
             companyId
         );
-        List<ApplicationSummary> applications =
-            applicationService.getApplicationsForCompany(companyId);
+        Map<Long, String> jobTitlesById = jobs.stream()
+            .collect(Collectors.toMap(JobSummaryDto::id, JobSummaryDto::title));
+        List<DashboardApplicationItem> applications =
+            applicationService.getDashboardApplicationsForCompany(
+                companyId,
+                jobTitlesById
+            );
         return new CompanyDashboardResponse(company, jobs, applications);
     }
 

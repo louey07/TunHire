@@ -1,5 +1,6 @@
 package com.tunhire.tunhire.job_offers;
 
+import com.tunhire.tunhire.job_offers.entity.WorkMode;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
@@ -16,6 +17,8 @@ public record JobRequest(
     String contractType,
 
     String experienceLevel,
+
+    @NotNull(message = "Work mode is required") WorkMode workMode,
 
     BigDecimal salaryMin,
 

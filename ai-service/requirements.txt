@@ -1,7 +1,10 @@
 fastapi
-uvicorn
+uvicorn[standard]
 pdfplumber
 python-docx
-spacy
 pydantic
 python-multipart
+python-dotenv
+groq
+sentence-transformers
+torch
