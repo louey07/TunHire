@@ -2,6 +2,7 @@ package com.tunhire.tunhire.common;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.stream.Collectors;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -64,6 +65,68 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(
+        IllegalArgumentException ex,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+            ErrorResponse.of(
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+            )
+        );
+    }
+
+    @ExceptionHandler(AiServiceUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleAiServiceUnavailable(
+        AiServiceUnavailableException ex,
+        HttpServletRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(
+            ErrorResponse.of(
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+            )
+        );
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
+        DataIntegrityViolationException ex,
+        HttpServletRequest request
+    ) {
+        String message = "Database constraint violation";
+        String details = ex.getMostSpecificCause().getMessage();
+        if (details != null) {
+            if (details.contains("company_memberships_role_check")) {
+                message =
+                    "Invalid company membership role. Restart the backend to apply schema migration.";
+            } else if (details.contains("jobs_status_check")) {
+                message =
+                    "Invalid job status. Restart the backend to apply schema migration.";
+            } else if (details.contains("jobs_work_mode_check")) {
+                message =
+                    "Invalid job work mode. Restart the backend to apply schema migration.";
+            } else if (details.contains("violates check constraint")) {
+                message = details;
+            }
+        }
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+            ErrorResponse.of(
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                message,
+                request.getRequestURI()
+            )
+        );
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(
         Exception ex,
@@ -79,4 +142,3 @@ public class GlobalExceptionHandler {
         );
     }
 }
-

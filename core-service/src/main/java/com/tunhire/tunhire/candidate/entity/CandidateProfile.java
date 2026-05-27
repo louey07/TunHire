@@ -34,6 +34,12 @@ public class CandidateProfile {
 
     private String resumeUrl;
 
+    private String resumeStorageKey;
+
+    private String resumeFileName;
+
+    private String resumeContentType;
+
     private String location;
 
     private LocalDate availableFrom;

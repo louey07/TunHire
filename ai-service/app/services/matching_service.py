@@ -3,6 +3,14 @@ from sentence_transformers import SentenceTransformer, util
 _model = None
 
 
+def is_model_ready() -> bool:
+    return _model is not None
+
+
+def warmup_model() -> None:
+    _get_model()
+
+
 def _get_model() -> SentenceTransformer:
     global _model
     if _model is None:

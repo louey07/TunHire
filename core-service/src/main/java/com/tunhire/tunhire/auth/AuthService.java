@@ -25,5 +25,10 @@ public interface AuthService {
      * Get the user by ID
      */
     UserDto getUserById(Long id);
+
+    /**
+     * Update the currently authenticated user's account details
+     */
+    UserDto updateCurrentUser(String email, UpdateUserRequest request);
 }
 

@@ -5,6 +5,7 @@ import com.tunhire.tunhire.auth.CandidateRegisteredEvent;
 import com.tunhire.tunhire.auth.AuthResponse;
 import com.tunhire.tunhire.auth.LoginRequest;
 import com.tunhire.tunhire.auth.RegisterRequest;
+import com.tunhire.tunhire.auth.UpdateUserRequest;
 import com.tunhire.tunhire.auth.UserDto;
 import com.tunhire.tunhire.auth.entity.User;
 import com.tunhire.tunhire.auth.repository.UserRepository;
@@ -137,6 +138,16 @@ public class AuthServiceImpl implements AuthService {
             .findByEmail(email)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"))
             .getId();
+    }
+
+    @Override
+    public UserDto updateCurrentUser(String email, UpdateUserRequest request) {
+        User user = userRepository
+            .findByEmail(email)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        user.setFirstName(request.firstName().trim());
+        user.setLastName(request.lastName().trim());
+        return toDto(userRepository.save(user));
     }
 
     /**

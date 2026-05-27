@@ -5,11 +5,13 @@ import com.tunhire.tunhire.auth.AuthService;
 import com.tunhire.tunhire.common.ApiResponse;
 import com.tunhire.tunhire.companies.CompanyCreateRequest;
 import com.tunhire.tunhire.companies.CompanyDashboardResponse;
+import com.tunhire.tunhire.companies.CompanyMembershipSummary;
 import com.tunhire.tunhire.companies.CompanyResponse;
 import com.tunhire.tunhire.companies.CompanyUpdateRequest;
 import com.tunhire.tunhire.companies.JobSummaryDto;
 import com.tunhire.tunhire.companies.CompanyDashboardService;
 import com.tunhire.tunhire.companies.service.CompanyService;
+import com.tunhire.tunhire.companies.service.MembershipService;
 import java.security.Principal;
 import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,15 +29,18 @@ public class CompaniesController {
 
     private final CompanyService companyService;
     private final CompanyDashboardService dashboardService;
+    private final MembershipService membershipService;
     private final AuthService authService;
 
     public CompaniesController(
         CompanyService companyService,
         CompanyDashboardService dashboardService,
+        MembershipService membershipService,
         AuthService authService
     ) {
         this.companyService = companyService;
         this.dashboardService = dashboardService;
+        this.membershipService = membershipService;
         this.authService = authService;
     }
 
@@ -49,6 +54,16 @@ public class CompaniesController {
         return ApiResponse.ok(
             "Company created",
             companyService.create(request, userId)
+        );
+    }
+
+    @GetMapping("/mine")
+    @PreAuthorize("hasAnyRole('RECRUITER', 'ADMIN')")
+    public ApiResponse<List<CompanyMembershipSummary>> getMine(Principal principal) {
+        Long userId = authService.getUserIdByEmail(principal.getName());
+        return ApiResponse.ok(
+            "Companies fetched",
+            membershipService.getCompaniesForUser(userId)
         );
     }
 
