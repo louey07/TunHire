@@ -1,0 +1,20 @@
+--- src/test/java/com/example/tunhire/ArchitectureTest.java
++++ src/test/java/com/example/tunhire/ArchitectureTest.java
+@@ -43,6 +43,16 @@
+         rule.check(classes);
+     }
+ 
++    @Test
++    void applicationsShouldNotDependOnCandidateDirectly() {
++        ArchRule rule = ArchRuleDefinition.noClasses()
++            .that()
++            .resideInAnyPackage("..applications..")
++            .should()
++            .dependOnClassesThat()
++            .resideInAnyPackage("..candidate.repository..", "..candidate.controller..", "..candidate.service..", "..candidate.entity..");
++        rule.check(classes);
++    }
++
+     @Test
+     void companiesShouldNotDependOnApplicationsDirectly() {
+         ArchRule rule = ArchRuleDefinition.noClasses()
