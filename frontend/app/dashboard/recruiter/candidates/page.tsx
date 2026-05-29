@@ -15,6 +15,7 @@ import {
   RecruiterSetupNotice,
   useRequireActiveCompany,
 } from "@/lib/hooks/useRequireActiveCompany";
+import { markRecruiterCandidatesSeen } from "@/lib/notifications/api";
 import { computePipelineStats } from "@/lib/recruiter/dashboard";
 import { formatCandidateName } from "@/lib/recruiter/candidates";
 import {
@@ -75,6 +76,11 @@ function RecruiterCandidatesPageContent() {
   useEffect(() => {
     requireRole("RECRUITER", router);
   }, [router]);
+
+  useEffect(() => {
+    if (!activeCompany?.companyId) return;
+    void markRecruiterCandidatesSeen(activeCompany.companyId);
+  }, [activeCompany?.companyId]);
 
   useEffect(() => {
     if (!activeCompany) {

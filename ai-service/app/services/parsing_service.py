@@ -41,6 +41,9 @@ _PROMPT = (
     "section in the CV. Extract only the language names without "
     "the level. Example: ['Arabe', 'Anglais', 'Français', 'Italien']. "
     "If no language section found, return empty list.\n"
+    "- cv_summary: string — a concise professional summary in French "
+    "(2-4 sentences, max 500 characters) describing the candidate's "
+    "profile, experience, and strengths.\n"
     "No markdown, no code blocks, just the raw JSON."
 )
 
@@ -70,6 +73,7 @@ _EMPTY: Dict[str, Any] = {
     "skills": [],
     "languages": [],
     "education": [],
+    "cv_summary": "",
     "confidence_score": 0.0,
 }
 
@@ -167,6 +171,7 @@ def parse_cv_text(text: str) -> Dict[str, Any]:
             "skills": list(data.get("skills") or []),
             "languages": languages_found,
             "education": list(data.get("education") or []),
+            "cv_summary": str(data.get("cv_summary") or "")[:500],
             "confidence_score": 0.95,
         }
 

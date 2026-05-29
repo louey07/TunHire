@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import MessageCandidateButton from "@/components/recruiter/MessageCandidateButton";
 import {
   APPLICATION_STATUS_LABELS,
   APPLICATION_STATUS_TONES,
@@ -17,7 +16,6 @@ type CandidateReviewHeaderProps = {
   jobTitle?: string | null;
   score: number | null;
   level: string | null;
-  candidateUserId?: number | null;
 };
 
 export default function CandidateReviewHeader({
@@ -27,7 +25,6 @@ export default function CandidateReviewHeader({
   jobTitle,
   score,
   level,
-  candidateUserId,
 }: CandidateReviewHeaderProps) {
   return (
     <section className="-mx-4 border-y border-[color-mix(in_srgb,var(--outline-variant)_15%,transparent)] bg-[var(--surface-container-lowest)] px-4 py-6 shadow-[0_2px_12px_rgba(0,30,64,0.06)] lg:-mx-8 lg:px-8 xl:-mx-10 xl:px-10">
@@ -53,9 +50,6 @@ export default function CandidateReviewHeader({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {candidateUserId ? (
-            <MessageCandidateButton candidateUserId={candidateUserId} />
-          ) : null}
           <span
             className={`rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] ${APPLICATION_STATUS_TONES[status] || APPLICATION_STATUS_TONES.SUBMITTED}`}
           >

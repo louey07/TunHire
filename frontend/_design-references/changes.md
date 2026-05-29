@@ -165,10 +165,10 @@ New FastAPI microservice:
 |-----------|---------|
 | `app/main.py` | FastAPI app entry |
 | `app/api/routes/cv_parser.py` | CV parsing (PDF/DOCX) via Groq |
-| `app/api/routes/matcher.py` | Skill ↔ job description matching |
-| `app/api/routes/ranker.py` | Multi-candidate ranking |
+| `app/api/routes/matcher_v2.py` | Structured matching and ranking (v2) |
 | `app/services/parsing_service.py` | CV text extraction + LLM parsing |
-| `app/services/matching_service.py` | Sentence-transformer matching |
+| `app/services/matching_service.py` | Sentence-transformer embeddings for v2 |
+| `app/services/ranking_service.py` | Hybrid scoring (embed + rules + optional LLM) |
 | `requirements.txt` | Python dependencies |
 | `.env.example` | `GROQ_API_KEY` and config template |
 | `README.md` | Setup and run instructions |
@@ -178,8 +178,8 @@ New FastAPI microservice:
 **Endpoints:**
 - `GET /health`
 - `POST /v1/cv/parse`
-- `POST /v1/match`
-- `POST /v1/rank`
+- `POST /v2/match`
+- `POST /v2/rank`
 
 ---
 

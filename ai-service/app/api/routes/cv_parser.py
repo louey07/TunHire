@@ -29,6 +29,7 @@ async def parse_cv(file: UploadFile = File(...)):
         skills=parsed["skills"],
         languages=parsed.get("languages", []),
         education=parsed["education"],
+        cv_summary=parsed.get("cv_summary") or None,
         raw_text=text,
         parser_version="1.0.0",
         confidence_score=parsed["confidence_score"],

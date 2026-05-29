@@ -107,6 +107,30 @@ export default function CandidateCard({
         </div>
       ) : null}
 
+      {application.summary ? (
+        <p className="mt-4 text-sm leading-6 text-[var(--on-surface-variant)]">
+          {application.summary}
+        </p>
+      ) : null}
+
+      {application.gaps && application.gaps.length > 0 ? (
+        <div className="mt-4">
+          <p className="label-uppercase text-[10px] font-semibold text-[var(--on-surface-variant)]">
+            Écarts identifiés
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {application.gaps.map((gap) => (
+              <span
+                key={gap}
+                className="rounded-full border border-[#93000a]/20 bg-[#93000a]/8 px-3 py-1 text-xs font-medium text-[#93000a]"
+              >
+                {gap}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <Link
           href={`/dashboard/recruiter/candidates/${application.applicationId}`}

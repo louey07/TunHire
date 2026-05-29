@@ -31,6 +31,10 @@ public class PostgresSchemaMigration implements ApplicationRunner {
         migrateJobStatuses();
         migrateJobWorkMode();
         migrateChatUniqueness();
+        migrateApplicationMatchScores();
+        migrateCandidateProfileMatchFields();
+        migrateApplicationStatusUpdatedAt();
+        migrateNotificationInboxTables();
     }
 
     private void migrateCompanyMembershipRoles() {
@@ -317,6 +321,103 @@ public class PostgresSchemaMigration implements ApplicationRunner {
               AND p.id > p2.id
             """
         );
+    }
+
+    private void migrateApplicationMatchScores() {
+        if (!tableExists("applications")) {
+            return;
+        }
+
+        jdbcTemplate.execute(
+            """
+            CREATE TABLE IF NOT EXISTS application_match_scores (
+                application_id BIGINT PRIMARY KEY REFERENCES applications(id) ON DELETE CASCADE,
+                job_id BIGINT NOT NULL,
+                score INT,
+                level VARCHAR(32),
+                matched_skills TEXT,
+                gaps TEXT,
+                summary TEXT,
+                job_version_hash VARCHAR(64),
+                profile_version_hash VARCHAR(64),
+                scorer_version VARCHAR(16),
+                computed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+            """
+        );
+        log.info("Ensured application_match_scores table exists");
+    }
+
+    private void migrateCandidateProfileMatchFields() {
+        if (!tableExists("candidate_profiles")) {
+            return;
+        }
+
+        if (!columnExists("candidate_profiles", "cv_summary")) {
+            jdbcTemplate.execute(
+                "ALTER TABLE candidate_profiles ADD COLUMN cv_summary TEXT"
+            );
+        }
+        if (!columnExists("candidate_profiles", "education_json")) {
+            jdbcTemplate.execute(
+                "ALTER TABLE candidate_profiles ADD COLUMN education_json TEXT"
+            );
+        }
+        if (!columnExists("candidate_profiles", "languages_json")) {
+            jdbcTemplate.execute(
+                "ALTER TABLE candidate_profiles ADD COLUMN languages_json TEXT"
+            );
+        }
+        if (!columnExists("candidate_profiles", "profile_version_hash")) {
+            jdbcTemplate.execute(
+                "ALTER TABLE candidate_profiles ADD COLUMN profile_version_hash VARCHAR(64)"
+            );
+        }
+        log.info("Ensured candidate profile match fields exist");
+    }
+
+    private void migrateApplicationStatusUpdatedAt() {
+        if (!tableExists("applications")) {
+            return;
+        }
+
+        if (!columnExists("applications", "status_updated_at")) {
+            jdbcTemplate.execute(
+                "ALTER TABLE applications ADD COLUMN status_updated_at TIMESTAMPTZ"
+            );
+        }
+        jdbcTemplate.update(
+            "UPDATE applications SET status_updated_at = created_at WHERE status_updated_at IS NULL"
+        );
+        jdbcTemplate.execute(
+            "ALTER TABLE applications ALTER COLUMN status_updated_at SET NOT NULL"
+        );
+        log.info("Ensured applications.status_updated_at exists");
+    }
+
+    private void migrateNotificationInboxTables() {
+        jdbcTemplate.execute(
+            """
+            CREATE TABLE IF NOT EXISTS recruiter_inbox_state (
+                user_id BIGINT NOT NULL,
+                company_id BIGINT NOT NULL,
+                applications_seen_at TIMESTAMPTZ NOT NULL,
+                PRIMARY KEY (user_id, company_id)
+            )
+            """
+        );
+        jdbcTemplate.execute(
+            """
+            CREATE TABLE IF NOT EXISTS candidate_application_views (
+                user_id BIGINT NOT NULL,
+                application_id BIGINT NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
+                last_seen_status VARCHAR(32) NOT NULL,
+                last_seen_at TIMESTAMPTZ NOT NULL,
+                PRIMARY KEY (user_id, application_id)
+            )
+            """
+        );
+        log.info("Ensured notification inbox tables exist");
     }
 
     private boolean columnExists(String tableName, String columnName) {

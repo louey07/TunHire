@@ -23,5 +23,7 @@ public interface ChatService {
 
     void markConversationAsRead(Long conversationId, Long userId);
 
+    long countTotalUnread(Long userId);
+
     ChatMessageDto sendMessage(Long conversationId, Long senderUserId, String body);
 }

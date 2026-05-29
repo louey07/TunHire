@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   companyInitials,
   formatWebsiteDisplay,
@@ -51,19 +50,9 @@ export default function JobCompanySummary({
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          {job.companySlug ? (
-            <Link
-              href={`/companies/${job.companySlug}`}
-              className="text-sm font-bold text-[var(--primary)] hover:underline"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {companyName}
-            </Link>
-          ) : (
-            <p className="text-sm font-bold text-[var(--primary)]">
-              {companyName}
-            </p>
-          )}
+          <p className="text-sm font-bold text-[var(--primary)]">
+            {companyName}
+          </p>
           {job.companyLocation ? (
             <span className="text-xs text-[var(--on-surface-variant)]">
               · {job.companyLocation}

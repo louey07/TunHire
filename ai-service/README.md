@@ -35,8 +35,8 @@ The Spring `core-service` expects the AI service at `http://localhost:8000` (see
 |--------|------|---------|
 | GET | `/health` | Service status + model readiness |
 | POST | `/v1/cv/parse` | Parse PDF/DOCX CV (multipart `file`) |
-| POST | `/v1/match` | Match one candidate's skills to a job description |
-| POST | `/v1/rank` | Rank multiple candidates for a job |
+| POST | `/v2/match` | Score one structured job + candidate profile |
+| POST | `/v2/rank` | Rank multiple candidates for a structured job |
 
 ## Troubleshooting
 

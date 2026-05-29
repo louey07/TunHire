@@ -1,5 +1,7 @@
 package com.tunhire.tunhire.companies.service;
 
+import com.tunhire.tunhire.auth.entity.User;
+import com.tunhire.tunhire.auth.repository.UserRepository;
 import com.tunhire.tunhire.companies.AcceptInviteRequest;
 import com.tunhire.tunhire.companies.CompanyMembershipSummary;
 import com.tunhire.tunhire.companies.MemberRole;
@@ -36,6 +38,9 @@ class MembershipServiceImplTest {
 
     @Mock
     private CompanyRepository companyRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private MembershipServiceImpl membershipService;
@@ -85,11 +90,42 @@ class MembershipServiceImplTest {
         when(membershipRepository.existsByCompanyIdAndUserId(10L, 5L)).thenReturn(true);
         when(membershipRepository.findByCompanyIdAndUserId(10L, 5L))
             .thenReturn(Optional.of(existing));
+        when(userRepository.findById(5L)).thenReturn(Optional.of(
+            User.builder().id(5L).email("member@example.com").firstName("Member").lastName("User").build()
+        ));
 
         var response = membershipService.acceptInvite(new AcceptInviteRequest("abc"), 5L);
 
         assertThat(response.companyId()).isEqualTo(10L);
         assertThat(response.userId()).isEqualTo(5L);
+    }
+
+    @Test
+    void getMembersIncludesUserIdentity() {
+        CompanyMembership membership = CompanyMembership.builder()
+            .id(1L)
+            .companyId(10L)
+            .userId(5L)
+            .role(MemberRole.MEMBER)
+            .joinedAt(LocalDateTime.now())
+            .build();
+        User user = User.builder()
+            .id(5L)
+            .email("recruiter@example.com")
+            .firstName("Sami")
+            .lastName("Ben Jomaa")
+            .build();
+
+        when(membershipRepository.existsByCompanyIdAndUserId(10L, 3L)).thenReturn(true);
+        when(membershipRepository.findByCompanyId(10L)).thenReturn(List.of(membership));
+        when(userRepository.findById(5L)).thenReturn(Optional.of(user));
+
+        var result = membershipService.getMembers(10L, 3L);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).firstName()).isEqualTo("Sami");
+        assertThat(result.get(0).lastName()).isEqualTo("Ben Jomaa");
+        assertThat(result.get(0).email()).isEqualTo("recruiter@example.com");
     }
 
     @Test
@@ -100,6 +136,9 @@ class MembershipServiceImplTest {
             member.setId(1L);
             return member;
         });
+        when(userRepository.findById(5L)).thenReturn(Optional.of(
+            User.builder().id(5L).email("admin@example.com").firstName("Admin").lastName("User").build()
+        ));
 
         var response = membershipService.addCreatorAsAdmin(10L, 5L);
 

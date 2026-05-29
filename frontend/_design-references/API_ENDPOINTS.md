@@ -440,6 +440,7 @@ Soft references use `Long` IDs (no JPA relations across modules).
 ### GET `/applications/job/{jobId}/ranked`
 
 - **Auth:** `RECRUITER`
+- **Caching:** Scores are persisted in `application_match_scores` (Postgres). Recomputed on read when job/profile hashes or `scorer_version` change.
 - **Response:** `ApiResponse<RankedApplicationResponse[]>`
 
 ```typescript
@@ -452,8 +453,12 @@ Soft references use `Long` IDs (no JPA relations across modules).
   score: number | null;    // AI match score 0-100
   level: string | null;    // e.g. "Weak Match", "Average Match", "Good Match", "Excellent Match"
   matchedSkills: string[] | null;
+  gaps: string[] | null;   // rule/LLM-identified gaps (French)
+  summary: string | null;  // recruiter-facing explanation (LLM when Groq configured)
 }
 ```
+
+> **AI v2:** Core-service calls `POST /v2/rank` with full job + candidate profile payload. See ai-service architecture for scorer modes.
 
 > To show candidate names, fetch `GET /candidates/{profileId}` using `userId` or join client-side.
 
@@ -684,6 +689,44 @@ Frontend invite link: `/invites/accept?token={token}`
 
 - **Side effect:** User joins company as `MEMBER`; token marked used
 - **Response:** `ApiResponse<MembershipResponse>`
+
+---
+
+## Notifications (sidebar badges)
+
+Server-side badge counts for sidebar red dots. Frontend polls `GET /notifications/badges` every 30s and on window focus.
+
+### GET `/notifications/badges`
+
+- **Auth:** Required (`CANDIDATE`, `RECRUITER`, or `ADMIN`)
+- **Query:** `companyId` (required for recruiters; ignored for candidates)
+- **Response:**
+
+```typescript
+type NotificationBadgesDto = {
+  chatUnread: number;           // unread chat messages (all conversations)
+  newApplications: number;      // recruiter: applications created after last Candidats visit
+  applicationUpdates: number;   // candidate: applications whose status changed since last visit
+};
+```
+
+Recruiter-only fields return `0` for candidates and vice versa.
+
+### POST `/notifications/recruiter/candidates-seen?companyId={id}`
+
+- **Auth:** `RECRUITER` or `ADMIN`
+- **Effect:** Marks all current company applications as seen; clears recruiter **Candidats** badge
+- **Response:** `ApiResponse<void>`
+
+Call when recruiter opens `/dashboard/recruiter/candidates`.
+
+### POST `/notifications/candidate/applications-seen`
+
+- **Auth:** `CANDIDATE`
+- **Effect:** Syncs acknowledged application statuses for the current user; clears **Mes candidatures** badge
+- **Response:** `ApiResponse<void>`
+
+Call when candidate opens `/dashboard/candidate/applications`.
 
 ---
 

@@ -5,11 +5,15 @@ import type { CandidateProfile } from "@/lib/types";
 type CandidateInsightsPanelProps = {
   profile: CandidateProfile | null;
   matchedSkills: string[] | null;
+  gaps?: string[] | null;
+  summary?: string | null;
 };
 
 export default function CandidateInsightsPanel({
   profile,
   matchedSkills,
+  gaps,
+  summary,
 }: CandidateInsightsPanelProps) {
   return (
     <div className="space-y-6">
@@ -58,6 +62,35 @@ export default function CandidateInsightsPanel({
                 }}
               >
                 {skill}
+              </span>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {summary ? (
+        <section className="surface-section p-6 editorial-shadow">
+          <h2 className="font-headline text-lg font-bold text-[var(--primary)]">
+            Analyse IA
+          </h2>
+          <p className="mt-3 text-sm leading-7 text-[var(--on-surface-variant)]">
+            {summary}
+          </p>
+        </section>
+      ) : null}
+
+      {gaps && gaps.length > 0 ? (
+        <section className="surface-section p-6 editorial-shadow">
+          <h2 className="font-headline text-lg font-bold text-[var(--primary)]">
+            Écarts identifiés
+          </h2>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {gaps.map((gap) => (
+              <span
+                key={gap}
+                className="rounded-full border border-[#93000a]/20 bg-[#93000a]/8 px-3 py-1 text-xs font-semibold text-[#93000a]"
+              >
+                {gap}
               </span>
             ))}
           </div>

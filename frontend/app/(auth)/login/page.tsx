@@ -110,15 +110,6 @@ function LoginContent() {
 
       const { token, user } = data.data
 
-      if (view === 'login' && user.role !== role) {
-        if (role === 'CANDIDATE') {
-          showMsg('error', 'Ce compte est un compte Recruteur. Veuillez sélectionner la carte Recruteur.')
-        } else {
-          showMsg('error', 'Ce compte est un compte Candidat. Veuillez sélectionner la carte Candidat.')
-        }
-        return
-      }
-
       setSession(token, user)
 
       if (view === 'register') {
@@ -208,31 +199,41 @@ function LoginContent() {
                   : 'Un espace editorial pour valoriser votre parcours et activer les bons signaux IA.'}
               </p>
 
-              <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {(['CANDIDATE', 'RECRUITER'] as Role[]).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setRole(r)}
-                    className={[
-                      'group relative overflow-hidden rounded-2xl p-4 text-left transition-all',
-                      role === r
-                        ? 'bg-[var(--primary)] text-white'
-                        : 'bg-[var(--surface-container-low)] text-[var(--primary)]',
-                      'soft-outline hover:-translate-y-0.5',
-                    ].join(' ')}
-                  >
-                    <div className="absolute -right-8 -top-8 h-16 w-16 rounded-full bg-[color:var(--secondary-bright)] opacity-20 blur-2xl" />
-                    <span className="text-2xl">{r === 'CANDIDATE' ? '👤' : '🏢'}</span>
-                    <p className="mt-3 text-sm font-semibold">
-                      {r === 'CANDIDATE' ? 'Candidat' : 'Recruteur'}
-                    </p>
-                    <p className={role === r ? 'text-xs text-white/70' : 'text-xs text-[var(--on-surface-variant)]'}>
-                      {r === 'CANDIDATE' ? 'Je cherche un emploi' : 'Je recrute des talents'}
-                    </p>
-                  </button>
-                ))}
-              </div>
+              {view === 'register' ? (
+                <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {(['CANDIDATE', 'RECRUITER'] as Role[]).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setRole(r)}
+                      className={[
+                        'group relative overflow-hidden rounded-2xl p-4 text-left transition-all',
+                        role === r
+                          ? 'bg-[var(--primary)] text-white'
+                          : 'bg-[var(--surface-container-low)] text-[var(--primary)]',
+                        'soft-outline hover:-translate-y-0.5',
+                      ].join(' ')}
+                    >
+                      <div className="absolute -right-8 -top-8 h-16 w-16 rounded-full bg-[color:var(--secondary-bright)] opacity-20 blur-2xl" />
+                      <span className="text-2xl">{r === 'CANDIDATE' ? '👤' : '🏢'}</span>
+                      <p className="mt-3 text-sm font-semibold">
+                        {r === 'CANDIDATE' ? 'Candidat' : 'Recruteur'}
+                      </p>
+                      <p
+                        className={
+                          role === r
+                            ? 'text-xs text-white/70'
+                            : 'text-xs text-[var(--on-surface-variant)]'
+                        }
+                      >
+                        {r === 'CANDIDATE'
+                          ? 'Je cherche un emploi'
+                          : 'Je recrute des talents'}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
 
               <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-5">
                 {view === 'register' && (

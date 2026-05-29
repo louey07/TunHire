@@ -228,6 +228,44 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public long countTotalUnread(Long userId) {
+        List<ChatParticipant> participants = participantRepository.findByUserIdOrderByJoinedAtDesc(
+            userId
+        );
+        Map<Long, ChatParticipant> uniqueParticipants = new LinkedHashMap<>();
+        for (ChatParticipant participant : participants) {
+            uniqueParticipants.putIfAbsent(participant.getConversationId(), participant);
+        }
+
+        long total = 0;
+        for (ChatParticipant participant : uniqueParticipants.values()) {
+            ChatConversation conversation = conversationRepository
+                .findById(participant.getConversationId())
+                .orElse(null);
+            if (conversation == null) {
+                continue;
+            }
+            if (
+                conversation.getType() == ConversationType.COMPANY_TEAM &&
+                !companyMembershipLookup.isMember(conversation.getCompanyId(), userId)
+            ) {
+                continue;
+            }
+
+            Instant lastReadAt = participant.getLastReadAt() != null
+                ? participant.getLastReadAt()
+                : Instant.EPOCH;
+            total += messageRepository.countByConversationIdAndCreatedAtAfterAndSenderUserIdNot(
+                conversation.getId(),
+                lastReadAt,
+                userId
+            );
+        }
+        return total;
+    }
+
+    @Override
     public ChatMessageDto sendMessage(
         Long conversationId,
         Long senderUserId,

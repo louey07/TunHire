@@ -28,27 +28,33 @@ def _score_to_level(score: int) -> str:
     return "Excellent Match"
 
 
-def match_candidate_to_job(candidate_skills: list, job_description: str) -> dict:
+def match_structured(
+    candidate_skills: list,
+    job_text: str,
+    candidate_text: str,
+) -> dict:
+    """Embed composite job vs candidate texts; derive matched skills from skill list."""
     model = _get_model()
 
-    candidate_string = ", ".join(candidate_skills)
+    if not candidate_text.strip():
+        return {"score": 0, "level": "Weak Match", "matched_skills": []}
 
     candidate_emb, job_emb = model.encode(
-        [candidate_string, job_description], convert_to_tensor=True
+        [candidate_text, job_text], convert_to_tensor=True
     )
     similarity = float(util.cos_sim(candidate_emb, job_emb)[0][0])
     score = max(0, min(100, round(similarity * 100)))
 
-    skill_embs = model.encode(candidate_skills, convert_to_tensor=True)
-    skill_scores = util.cos_sim(skill_embs, job_emb).squeeze(1).tolist()
-
-    # Pick skills whose individual score is in the top half relative to the overall match
-    threshold = max(0.25, similarity * 0.5)
-    matched_skills = [
-        skill
-        for skill, s in zip(candidate_skills, skill_scores)
-        if s >= threshold
-    ]
+    matched_skills: list[str] = []
+    if candidate_skills:
+        skill_embs = model.encode(candidate_skills, convert_to_tensor=True)
+        skill_scores = util.cos_sim(skill_embs, job_emb).squeeze(1).tolist()
+        threshold = max(0.25, similarity * 0.5)
+        matched_skills = [
+            skill
+            for skill, s in zip(candidate_skills, skill_scores)
+            if s >= threshold
+        ]
 
     return {
         "score": score,

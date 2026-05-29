@@ -7,6 +7,7 @@ import {
   RecruiterSetupNotice,
   useRequireActiveCompany,
 } from "@/lib/hooks/useRequireActiveCompany";
+import type { MembershipResponse } from "@/lib/types";
 
 type CompanyResponse = {
   id: number;
@@ -22,22 +23,14 @@ type CompanyApiResponse = {
   data?: CompanyResponse;
 };
 
+type MemberRole = MembershipResponse["role"];
+
 type StoredUser = {
   id: number;
   email: string;
   firstName: string;
   lastName: string;
   role: "CANDIDATE" | "RECRUITER";
-};
-
-type MemberRole = "RECRUITER_ADMIN" | "MEMBER";
-
-type Membership = {
-  id: number;
-  companyId: number;
-  userId: number;
-  role: MemberRole;
-  joinedAt: string;
 };
 
 type InviteTokenResponse = {
@@ -96,15 +89,11 @@ function buildInviteLink(token: string) {
   return `${window.location.origin}/invites/accept?token=${token}`;
 }
 
-function getMemberLabel(
-  member: Membership,
-  currentUser: StoredUser | null,
-): string {
-  if (member.userId === currentUser?.id && currentUser) {
-    const name = `${currentUser.firstName} ${currentUser.lastName}`.trim();
-    return name || "Vous";
-  }
-  return ROLE_LABELS[member.role];
+function getMemberDisplayName(member: MembershipResponse): string {
+  const name = `${member.firstName ?? ""} ${member.lastName ?? ""}`.trim();
+  if (name) return name;
+  if (member.email?.trim()) return member.email.trim();
+  return "Membre";
 }
 
 export default function RecruiterTeamPage() {
@@ -113,7 +102,7 @@ export default function RecruiterTeamPage() {
     useRequireActiveCompany();
   const companyId = activeCompany ? String(activeCompany.companyId) : null;
   const [company, setCompany] = useState<CompanyResponse | null>(null);
-  const [members, setMembers] = useState<Membership[]>([]);
+  const [members, setMembers] = useState<MembershipResponse[]>([]);
   const [sessionActivity, setSessionActivity] = useState<ActivityItem[]>([]);
   const [inviteLink, setInviteLink] = useState("");
   const [inviteMsg, setInviteMsg] = useState("");
@@ -133,7 +122,7 @@ export default function RecruiterTeamPage() {
     try {
       const [companyRes, membersRes] = await Promise.all([
         apiGet<CompanyResponse>(`/companies/${activeCompanyId}`),
-        apiGet<Membership[]>(`/companies/${activeCompanyId}/members`),
+        apiGet<MembershipResponse[]>(`/companies/${activeCompanyId}/members`),
       ]);
 
       if (!companyRes.success || !companyRes.data) {
@@ -207,14 +196,14 @@ export default function RecruiterTeamPage() {
     }
   }
 
-  async function changeRole(member: Membership, nextRole: MemberRole) {
+  async function changeRole(member: MembershipResponse, nextRole: MemberRole) {
     if (!companyId || member.role === nextRole) return;
 
     setUpdatingRoleUserId(member.userId);
     setPageError("");
 
     try {
-      const res = await apiPatch<Membership>(
+      const res = await apiPatch<MembershipResponse>(
         `/companies/${companyId}/members/${member.userId}/role?role=${nextRole}`,
       );
       if (!res.success || !res.data) return;
@@ -240,7 +229,7 @@ export default function RecruiterTeamPage() {
     }
   }
 
-  async function removeMember(member: Membership) {
+  async function removeMember(member: MembershipResponse) {
     if (!companyId) return;
 
     setRemovingUserId(member.userId);
@@ -290,19 +279,22 @@ export default function RecruiterTeamPage() {
   }, [members]);
 
   const activityFeed = useMemo(() => {
-    const membershipActivity: ActivityItem[] = members.map((member) => ({
-      id: `joined-${member.userId}-${member.joinedAt}`,
-      title:
-        member.userId === currentUser?.id
-          ? "Vous avez rejoint l’équipe"
-          : `${ROLE_LABELS[member.role]} actif`,
-      detail:
-        member.userId === currentUser?.id
-          ? "Votre accès à l’espace recrutement est actif."
-          : `Rôle actuel : ${ROLE_LABELS[member.role]}.`,
-      occurredAt: member.joinedAt,
-      accent: member.role === "RECRUITER_ADMIN" ? "green" : "slate",
-    }));
+    const membershipActivity: ActivityItem[] = members.map((member) => {
+      const displayName = getMemberDisplayName(member);
+      return {
+        id: `joined-${member.userId}-${member.joinedAt}`,
+        title:
+          member.userId === currentUser?.id
+            ? "Vous avez rejoint l’équipe"
+            : `${displayName} a rejoint l’équipe`,
+        detail:
+          member.userId === currentUser?.id
+            ? "Votre accès à l’espace recrutement est actif."
+            : `Rôle : ${ROLE_LABELS[member.role]}.`,
+        occurredAt: member.joinedAt || new Date().toISOString(),
+        accent: member.role === "RECRUITER_ADMIN" ? "green" : "slate",
+      };
+    });
 
     return [...sessionActivity, ...membershipActivity]
       .sort(
@@ -465,7 +457,7 @@ export default function RecruiterTeamPage() {
                                   <div className="space-y-3">
                                     <div className="flex flex-wrap items-center gap-2">
                                       <h3 className="text-lg font-semibold text-[#001e40]">
-                                        {getMemberLabel(member, currentUser)}
+                                        {getMemberDisplayName(member)}
                                       </h3>
                                       {isCurrentUser && (
                                         <span className="rounded-full bg-[#00daf3]/15 px-3 py-1 text-[11px] font-semibold text-[#006875]">
@@ -480,6 +472,14 @@ export default function RecruiterTeamPage() {
                                     </div>
 
                                     <div className="grid gap-2 text-sm text-[#43474f] sm:grid-cols-2">
+                                      {member.email ? (
+                                        <p className="sm:col-span-2">
+                                          <span className="font-semibold text-[#001e40]">
+                                            Email :
+                                          </span>{" "}
+                                          {member.email}
+                                        </p>
+                                      ) : null}
                                       <p>
                                         <span className="font-semibold text-[#001e40]">
                                           Ajouté le :

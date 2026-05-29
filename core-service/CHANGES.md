@@ -3,9 +3,9 @@
 ## New Files
 
 ### `src/main/java/com/tunhire/tunhire/common/AiServiceClient.java`
-HTTP client that calls the AI service. Handles CV parsing (`POST /v1/cv/parse`),
-candidate-job matching (`POST /v1/match`), and candidate ranking (`POST /v1/rank`).
-Returns `null` and logs a warning when the AI service is unavailable.
+HTTP client that calls the AI service. Handles CV parsing (`POST /v1/cv/parse`)
+and candidate ranking (`POST /v2/rank`). Returns `null` and logs a warning when
+the AI service is unavailable.
 
 ### `src/main/java/com/tunhire/tunhire/common/config/AppConfig.java`
 Defines the `RestTemplate` bean used by `AiServiceClient`.

@@ -88,6 +88,8 @@ export type RankedApplicationRaw = {
   score: number | null;
   level: string | null;
   matchedSkills: string[] | null;
+  gaps?: string[] | null;
+  summary?: string | null;
 };
 
 export type EnrichedRankedApplication = RankedApplicationRaw & {
@@ -137,6 +139,9 @@ export type MembershipResponse = {
   id: number;
   companyId: number;
   userId: number;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
   role: MemberRole;
   joinedAt?: string;
 };

@@ -12,6 +12,7 @@ import com.tunhire.tunhire.candidate.entity.CandidateProfile;
 import com.tunhire.tunhire.candidate.entity.CandidateSkill;
 import com.tunhire.tunhire.candidate.repository.CandidateProfileRepository;
 import com.tunhire.tunhire.candidate.repository.CandidateSkillRepository;
+import com.tunhire.tunhire.common.MatchScoreHashUtil;
 import com.tunhire.tunhire.common.ResourceNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -71,7 +72,9 @@ public class CandidateServiceImpl implements CandidateService {
         if (request.availableFrom() != null) profile.setAvailableFrom(request.availableFrom());
         if (request.yearsOfExperience() != null) profile.setYearsOfExperience(request.yearsOfExperience());
 
-        return mapToResponse(profileRepository.save(profile));
+        profile = profileRepository.save(profile);
+        refreshProfileVersionHash(profile);
+        return mapToResponse(profile);
     }
 
     @Override
@@ -86,6 +89,7 @@ public class CandidateServiceImpl implements CandidateService {
         skill.setSkillName(request.skillName());
 
         CandidateSkill saved = skillRepository.save(skill);
+        refreshProfileVersionHash(profile);
         return new CandidateSkillResponse(saved.getId(), saved.getSkillName());
     }
 
@@ -96,6 +100,7 @@ public class CandidateServiceImpl implements CandidateService {
             .findByUserId(userId)
             .orElseThrow(() -> new RuntimeException("Profile not found"));
         skillRepository.deleteByIdAndProfileId(skillId, profile.getId());
+        refreshProfileVersionHash(profile);
     }
 
     @Override
@@ -115,6 +120,57 @@ public class CandidateServiceImpl implements CandidateService {
                 skill.setSkillName(name);
                 skillRepository.save(skill);
             });
+
+        refreshProfileVersionHash(profile);
+    }
+
+    @Override
+    @Transactional
+    public CandidateProfileResponse applyCvParseResult(
+        Long userId,
+        List<String> skills,
+        String location,
+        Integer yearsOfExperience,
+        List<String> education,
+        List<String> languages,
+        String cvSummary
+    ) {
+        CandidateProfile profile = profileRepository
+            .findByUserId(userId)
+            .orElseGet(() -> createEmptyProfile(userId));
+        final Long profileId = profile.getId();
+
+        if (skills != null && !skills.isEmpty()) {
+            skillRepository.deleteAllByProfileId(profileId);
+            skills.stream()
+                .filter(name -> name != null && !name.isBlank())
+                .forEach(name -> {
+                    CandidateSkill skill = new CandidateSkill();
+                    skill.setProfileId(profileId);
+                    skill.setSkillName(name);
+                    skillRepository.save(skill);
+                });
+        }
+
+        if (location != null && !location.isBlank()) {
+            profile.setLocation(location);
+        }
+        if (yearsOfExperience != null && yearsOfExperience > 0) {
+            profile.setYearsOfExperience(yearsOfExperience);
+        }
+        if (education != null) {
+            profile.setEducationJson(MatchScoreHashUtil.toJson(education));
+        }
+        if (languages != null) {
+            profile.setLanguagesJson(MatchScoreHashUtil.toJson(languages));
+        }
+        if (cvSummary != null && !cvSummary.isBlank()) {
+            profile.setCvSummary(cvSummary);
+        }
+
+        profile = profileRepository.save(profile);
+        refreshProfileVersionHash(profile);
+        return mapToResponse(profile);
     }
 
     @Override
@@ -152,7 +208,9 @@ public class CandidateServiceImpl implements CandidateService {
             profile.setYearsOfExperience(profileUpdate.yearsOfExperience());
         }
 
-        return mapToResponse(profileRepository.save(profile));
+        profile = profileRepository.save(profile);
+        refreshProfileVersionHash(profile);
+        return mapToResponse(profile);
     }
 
     @Override
@@ -200,6 +258,16 @@ public class CandidateServiceImpl implements CandidateService {
         CandidateProfile profile = new CandidateProfile();
         profile.setUserId(userId);
         return profileRepository.save(profile);
+    }
+
+    private void refreshProfileVersionHash(CandidateProfile profile) {
+        List<String> skills = skillRepository.findByProfileId(profile.getId()).stream()
+            .map(CandidateSkill::getSkillName)
+            .collect(Collectors.toList());
+        profile.setProfileVersionHash(
+            MatchScoreHashUtil.computeProfileVersionHash(profile, skills)
+        );
+        profileRepository.save(profile);
     }
 
     private CandidateProfileResponse mapToResponse(CandidateProfile profile) {

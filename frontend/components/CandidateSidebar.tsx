@@ -2,14 +2,20 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import NavBadgeDot from "@/components/NavBadgeDot";
 import { logout } from "@/lib/auth";
+import { useSidebarBadges } from "@/lib/hooks/useSidebarBadges";
 
 const NAV_ITEMS = [
-  { label: "Tableau de bord", href: "/dashboard/candidate" },
-  { label: "Mon profil", href: "/dashboard/candidate/profile" },
-  { label: "Mes candidatures", href: "/dashboard/candidate/applications" },
-  { label: "Chat", href: "/dashboard/candidate/chat" },
-  { label: "Trouver un emploi", href: "/jobs" },
+  { label: "Tableau de bord", href: "/dashboard/candidate", badge: null },
+  { label: "Mon profil", href: "/dashboard/candidate/profile", badge: null },
+  {
+    label: "Mes candidatures",
+    href: "/dashboard/candidate/applications",
+    badge: "applications" as const,
+  },
+  { label: "Chat", href: "/dashboard/candidate/chat", badge: "chat" as const },
+  { label: "Trouver un emploi", href: "/jobs", badge: null },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -36,10 +42,27 @@ export default function CandidateSidebar({
 }: CandidateSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { badges } = useSidebarBadges();
 
   function handleLogout() {
     logout();
     router.push("/login");
+  }
+
+  function showBadge(badge: (typeof NAV_ITEMS)[number]["badge"]) {
+    if (badge === "chat") {
+      return (
+        badges.chatUnread > 0 &&
+        !pathname.startsWith("/dashboard/candidate/chat")
+      );
+    }
+    if (badge === "applications") {
+      return (
+        badges.applicationUpdates > 0 &&
+        !pathname.startsWith("/dashboard/candidate/applications")
+      );
+    }
+    return false;
   }
 
   return (
@@ -59,6 +82,7 @@ export default function CandidateSidebar({
       <nav className="flex flex-1 flex-col gap-2">
         {NAV_ITEMS.map((item) => {
           const active = isActive(pathname, item.href);
+          const hasBadge = item.badge ? showBadge(item.badge) : false;
           return (
             <Link
               key={item.href}
@@ -71,7 +95,9 @@ export default function CandidateSidebar({
               }`}
             >
               <span>{item.label}</span>
-              {active ? (
+              {hasBadge ? (
+                <NavBadgeDot visible />
+              ) : active ? (
                 <span className="h-2 w-2 rounded-full bg-[var(--secondary)]" />
               ) : null}
             </Link>

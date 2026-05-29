@@ -1,5 +1,7 @@
 package com.tunhire.tunhire.companies.service;
 
+import com.tunhire.tunhire.auth.entity.User;
+import com.tunhire.tunhire.auth.repository.UserRepository;
 import com.tunhire.tunhire.common.ResourceNotFoundException;
 import com.tunhire.tunhire.companies.AcceptInviteRequest;
 import com.tunhire.tunhire.companies.CompanyMembershipSummary;
@@ -28,14 +30,17 @@ public class MembershipServiceImpl implements MembershipService {
     private final CompanyMembershipRepository membershipRepository;
     private final CompanyInvitationRepository invitationRepository;
     private final CompanyRepository companyRepository;
+    private final UserRepository userRepository;
 
     public MembershipServiceImpl(
             CompanyMembershipRepository membershipRepository,
             CompanyInvitationRepository invitationRepository,
-            CompanyRepository companyRepository) {
+            CompanyRepository companyRepository,
+            UserRepository userRepository) {
         this.membershipRepository = membershipRepository;
         this.invitationRepository = invitationRepository;
         this.companyRepository = companyRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -187,10 +192,14 @@ public class MembershipServiceImpl implements MembershipService {
     }
 
     private MembershipResponse toResponse(CompanyMembership membership) {
+        User user = userRepository.findById(membership.getUserId()).orElse(null);
         return new MembershipResponse(
             membership.getId(),
             membership.getCompanyId(),
             membership.getUserId(),
+            user != null ? user.getFirstName() : "",
+            user != null ? user.getLastName() : "",
+            user != null ? user.getEmail() : "",
             membership.getRole(),
             membership.getJoinedAt()
         );
