@@ -13,6 +13,9 @@ async def parse_cv(file: UploadFile = File(...)):
 
     try:
         text = await extract_text_from_file(file)
+        print("=== EXTRACTED TEXT ===")
+        print(text)
+        print("=== END TEXT ===")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
