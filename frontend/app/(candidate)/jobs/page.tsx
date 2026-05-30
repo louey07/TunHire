@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import CandidateContent from "@/components/CandidateContent";
 import EmptyState from "@/components/EmptyState";
 import ErrorBlock from "@/components/ErrorBlock";
@@ -31,6 +31,7 @@ import type { Job, PaginatedResponse } from "@/lib/types";
 
 export default function JobsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useClientUser();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [keyword, setKeyword] = useState("");
@@ -84,6 +85,13 @@ export default function JobsPage() {
       /* ignore */
     }
   }
+
+  useEffect(() => {
+    const q = searchParams.get("q");
+    const location = searchParams.get("location");
+    if (q) setKeyword(q);
+    if (location) setLocationQuery(location);
+  }, [searchParams]);
 
   useEffect(() => {
     void fetchJobs(0);

@@ -88,8 +88,17 @@ public class CandidateController {
             );
         }
 
+        candidateService.applyCvParseResult(
+            userId,
+            result.skills(),
+            result.location(),
+            result.yearsExperience() > 0 ? result.yearsExperience() : null,
+            result.education(),
+            result.languages(),
+            result.cvSummary()
+        );
+
         if (result.skills() != null && !result.skills().isEmpty()) {
-            candidateService.updateSkillsFromCv(userId, result.skills());
             log.info("Imported {} skills from CV for user {}", result.skills().size(), userId);
         } else {
             log.warn("CV parsed for user {} but no skills were extracted", userId);
@@ -98,9 +107,9 @@ public class CandidateController {
         UpdateProfileRequest profileUpdate = new UpdateProfileRequest(
             null,
             null,
-            result.location(),
             null,
-            result.yearsExperience() > 0 ? result.yearsExperience() : null
+            null,
+            null
         );
 
         return ResponseEntity.ok(

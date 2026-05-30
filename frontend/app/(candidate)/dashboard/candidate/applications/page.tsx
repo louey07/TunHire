@@ -12,6 +12,7 @@ import StatusFilterPills from "@/components/ui/StatusFilterPills";
 import StatusPipelineStrip from "@/components/ui/StatusPipelineStrip";
 import { getUser, requireRole } from "@/lib/auth";
 import { useCandidateApplications } from "@/lib/hooks/useCandidateApplications";
+import { markCandidateApplicationsSeen } from "@/lib/notifications/api";
 import {
   APPLICATION_STATUS_UI,
   PIPELINE_STATUSES,
@@ -30,6 +31,10 @@ export default function CandidateApplicationsPage() {
   useEffect(() => {
     requireRole("CANDIDATE", router);
   }, [router]);
+
+  useEffect(() => {
+    void markCandidateApplicationsSeen();
+  }, []);
 
   const { applications, jobsById, statusCounts, loading, error, deletingId, deleteApplication } =
     useCandidateApplications(user?.id);

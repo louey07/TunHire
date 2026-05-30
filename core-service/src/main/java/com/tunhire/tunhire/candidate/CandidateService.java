@@ -12,6 +12,15 @@ public interface CandidateService {
     void removeSkill(Long userId, Long skillId);
     CandidateProfileResponse getPublicProfile(Long userId);
     void updateSkillsFromCv(Long userId, List<String> skillNames);
+    CandidateProfileResponse applyCvParseResult(
+        Long userId,
+        List<String> skills,
+        String location,
+        Integer yearsOfExperience,
+        List<String> education,
+        List<String> languages,
+        String cvSummary
+    );
     CandidateProfileResponse storeUploadedCv(
         Long userId,
         MultipartFile file,

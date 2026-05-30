@@ -94,16 +94,6 @@ export default function CandidateCvPanel({
               : "Téléchargez le CV du candidat pour l'examiner."}
           </p>
         </div>
-        {hasResume && !isPdf ? (
-          <button
-            type="button"
-            onClick={() => void download()}
-            disabled={downloading}
-            className="btn-primary rounded-2xl px-5 py-2.5 text-sm disabled:opacity-60"
-          >
-            {downloading ? "Téléchargement…" : "Télécharger le CV"}
-          </button>
-        ) : null}
       </div>
 
       {!hasResume ? (
@@ -130,21 +120,9 @@ export default function CandidateCvPanel({
           ) : previewError ? (
             <div className="mt-4 flex flex-1 flex-col items-center justify-center rounded-3xl bg-[var(--surface-container-low)] p-10 text-center">
               <p className="text-sm text-[#93000a]">{previewError}</p>
-              <button
-                type="button"
-                onClick={() => void download()}
-                disabled={downloading}
-                className="btn-secondary mt-4 rounded-2xl px-5 py-2 text-sm disabled:opacity-60"
-              >
-                Télécharger le CV
-              </button>
             </div>
           ) : previewUrl ? (
-            <PdfViewer
-              previewUrl={previewUrl}
-              candidateUserId={candidateUserId}
-              fileName={fileName}
-            />
+            <PdfViewer previewUrl={previewUrl} />
           ) : null}
         </div>
       ) : (

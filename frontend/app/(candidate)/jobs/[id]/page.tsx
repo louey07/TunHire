@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import CandidateContent from "@/components/CandidateContent";
+import CompanyAboutSection from "@/components/candidate/CompanyAboutSection";
 import ErrorBlock from "@/components/ErrorBlock";
-import JobCompanySummary from "@/components/candidate/JobCompanySummary";
 import Navbar from "@/components/Navbar";
 import { apiGet, apiPost, apiPublicGet } from "@/lib/api";
 import { useClientUser } from "@/lib/hooks/useClientUser";
@@ -126,12 +126,6 @@ export default function JobDetailPage() {
               </span>
             </div>
 
-            {job.companyName ? (
-              <div className="mb-6">
-                <JobCompanySummary job={job} />
-              </div>
-            ) : null}
-
             <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="surface-card rounded-2xl p-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--on-surface-variant)]">
@@ -168,6 +162,12 @@ export default function JobDetailPage() {
                 </p>
               </div>
             </div>
+
+            {job.companyName ? (
+              <div className="mb-6">
+                <CompanyAboutSection job={job} />
+              </div>
+            ) : null}
 
             <div className="surface-card rounded-3xl p-6">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--on-surface-variant)]">

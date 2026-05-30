@@ -39,6 +39,8 @@ export default function CandidateDetailPage() {
     score: number | null;
     level: string | null;
     matchedSkills: string[] | null;
+    gaps: string[] | null;
+    summary: string | null;
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -96,6 +98,8 @@ export default function CandidateDetailPage() {
               score: match.score,
               level: match.level,
               matchedSkills: match.matchedSkills,
+              gaps: match.gaps ?? null,
+              summary: match.summary ?? null,
             });
           }
         }
@@ -186,7 +190,6 @@ export default function CandidateDetailPage() {
         jobTitle={jobTitle}
         score={rankedMeta?.score ?? null}
         level={rankedMeta?.level ?? null}
-        candidateUserId={application.userId}
       />
 
       {error ? <p className="mt-4 text-sm text-[#93000a]">{error}</p> : null}
@@ -209,6 +212,8 @@ export default function CandidateDetailPage() {
           <CandidateInsightsPanel
             profile={profile}
             matchedSkills={rankedMeta?.matchedSkills ?? null}
+            gaps={rankedMeta?.gaps ?? null}
+            summary={rankedMeta?.summary ?? null}
           />
         </aside>
       </div>

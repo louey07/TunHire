@@ -1,10 +1,9 @@
 # TunHire AI Service — Architecture (Current Implementation)
 
 ## 1. Overview
-The `ai-service` is a Python microservice built with FastAPI. It provides three production endpoints used by `core-service`:
+The `ai-service` is a Python microservice built with FastAPI. It provides production endpoints used by `core-service`:
 - CV parsing from uploaded PDF/DOCX files.
-- Candidate-to-job semantic matching.
-- Candidate ranking for a given job description.
+- Structured candidate-to-job matching and ranking (v2).
 
 The service is currently stateless: it computes results on request and does not persist embeddings.
 
@@ -28,38 +27,30 @@ The service is currently stateless: it computes results on request and does not 
 4. Return parsed profile with confidence score and parser version.
 
 **Output (high-level)**
-- `full_name`, `email`, `phone`, `location`, `years_experience`, `skills`, `languages`, `education`, `confidence_score`.
+- `full_name`, `email`, `phone`, `location`, `years_experience`, `skills`, `languages`, `education`, `cv_summary`, `confidence_score`.
 
-### 3.2 Semantic Match (`POST /v1/match`)
+### 3.2 Structured ranking v2 (`POST /v2/rank`, `POST /v2/match`)
+
 **Input**
-- `candidate_skills` (list of strings)
-- `job_description` (string)
+- `job`: title, description, location, work_mode, contract_type, experience_level, salary range
+- `candidate(s)`: skills, bio, location, years_experience, languages, education, cv_summary
 
 **Flow**
-1. Join candidate skills into one text.
-2. Encode candidate text and job description into embeddings using `sentence-transformers`.
-3. Compute cosine similarity.
-4. Convert similarity into score (0–100) and level (`Weak`, `Average`, `Good`, `Excellent`).
-5. Compute per-skill similarity and return `matched_skills` above dynamic threshold.
+1. Build composite text for job and candidate.
+2. Embedding similarity on full texts (not skills-only).
+3. Rule-based adjustments (experience level, incomplete profile, location/work mode).
+4. Optional Groq LLM score + French summary when `GROQ_API_KEY` and `SCORER_MODE=hybrid|llm`.
+5. Blend scores and return `gaps`, `matched_skills`, `summary`, `scorer_version`.
 
-### 3.3 Candidate Ranking (`POST /v1/rank`)
-**Input**
-- `job_description` (string)
-- `candidates`: list of `{ candidate_id, skills }`
+**Core-service caching:** `core-service` stores results in `application_match_scores` and reuses them until job/profile/scorer version changes.
 
-**Flow**
-1. For each candidate, call same matching logic used by `/v1/match`.
-2. Build candidate score/level/matched skills.
-3. Sort by score descending.
-4. Return ranked list.
+No job-description generation endpoint is currently implemented in the codebase.
 
 ## 4. Current API Surface
 - `GET /health`
 - `POST /v1/cv/parse`
-- `POST /v1/match`
-- `POST /v1/rank`
-
-No job-description generation endpoint is currently implemented in the codebase.
+- `POST /v2/match` (structured job + candidate profile)
+- `POST /v2/rank` (structured batch ranking; hybrid embed + rules + optional Groq LLM)
 
 ## 5. Project Structure (As-Is)
 ```text
@@ -68,42 +59,53 @@ ai-service/
 │   ├── main.py
 │   ├── api/routes/
 │   │   ├── cv_parser.py
-│   │   ├── matcher.py
-│   │   └── ranker.py
+│   │   └── matcher_v2.py
 │   ├── schemas/
 │   │   ├── cv.py
-│   │   ├── matching.py
-│   │   └── ranking.py
+│   │   └── matching_v2.py
 │   ├── services/
 │   │   ├── parsing_service.py
-│   │   └── matching_service.py
+│   │   ├── matching_service.py
+│   │   ├── ranking_service.py
+│   │   ├── rules_service.py
+│   │   └── llm_ranking_service.py
 │   └── utils/
 │       └── text_extractor.py
 ├── requirements.txt
 ├── architecture.md
-└── test_parsing.py
+├── test_parsing.py
+└── test_ranking.py
 ```
 
 ## 6. Integration with `core-service`
 1. `core-service` acts as the caller/gateway.
 2. `core-service` invokes:
-   - `POST /v1/cv/parse` to parse uploaded CVs.
-   - `POST /v1/match` for one candidate/job comparison.
-   - `POST /v1/rank` to rank job applicants by skills against a job description.
-3. If `ai-service` is unavailable, `core-service` logs a warning and continues with safe fallback behavior (`null` response handling).
+   - `POST /v1/cv/parse` to parse uploaded CVs (returns `cv_summary`, education, languages).
+   - `POST /v2/rank` to rank job applicants using structured job + profile payloads.
+3. `core-service` caches v2 rank results in PostgreSQL (`application_match_scores`) and reuses them when job/profile/scorer version hashes are unchanged.
+4. If `ai-service` is unavailable, `core-service` logs a warning and returns ranked applications with `null` scores.
 
 ## 7. Data & Storage Model (Current State)
-- There is no dedicated AI database layer in `ai-service` right now.
-- No vector database (`pgvector`, Qdrant, Milvus, etc.) is currently used in implementation.
-- Embeddings are generated per request and kept in memory only for the request lifecycle.
+- There is no dedicated AI database layer in `ai-service`; scoring is stateless per request.
+- **Score persistence lives in `core-service`:** table `application_match_scores` stores score, level, matched skills, gaps, summary, and freshness hashes.
+- No vector database (`pgvector`, Qdrant, Milvus, etc.) is used; embeddings are computed in-memory per request.
 
-This is acceptable for the current scope (ranking applicants already selected by `core-service`), and keeps architecture simple.
+This is acceptable for ranking applicants on a single job (typically fewer than 100 profiles per batch).
 
-## 8. Known Gaps and Next Steps
+## 8. Configuration
 
-### 8.1 Dependency alignment
-The code imports packages not currently listed in `requirements.txt` (for example `groq`, `python-dotenv`, `sentence-transformers`).  
-The requirements file should be aligned with real runtime imports.
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `SCORER_MODE` | `hybrid` | `embedding`, `hybrid`, or `llm` |
+| `GROQ_API_KEY` | — | Enables LLM scoring + French recruiter summary |
+| `EMBED_RULES_BLEND_*` | 0.7 / 0.3 | Weights when LLM disabled |
+| `HYBRID_BLEND_*` | 0.4 / 0.4 / 0.2 | embed / llm / rules when LLM enabled |
 
-### 8.2 Optional future enhancement: vector persistence
-If TunHire adds platform-wide semantic search (e.g., retrieve top candidates from all profiles), introduce vector persistence (such as PostgreSQL + `pgvector`) and asynchronous re-embedding pipelines.
+`core-service` sets `ai.scorer.version` (default `2.0`) to invalidate cached scores after scorer upgrades.
+
+## 9. Known Gaps and Next Steps
+
+### 9.1 Optional future enhancements
+- Async precompute on application submit.
+- pgvector for platform-wide candidate discovery.
+- Manual "Recalculer" button for recruiters.

@@ -25,8 +25,8 @@ _PROMPT = (
     "reconstruct the full name correctly as 'Souilhi Louey'\n"
     "- email: string\n"
     "- phone: string\n"
-    "- location: string (extract the city and country where the candidate is located, look for it in the header, contact info, or profile section)\n"
-    "- years_experience: integer (calculate total years of professional experience by looking at work experience dates, or look for explicit mentions like '4 ans d experience' or '3 years of experience' in the profile section. If no experience found return 0)\n"
+    "- location: string (city only)\n"
+    "- years_experience: integer\n"
     "- skills: list of strings — include ALL skills mentioned: "
     "technical skills, soft skills, tools, frameworks. "
     "Each item maximum 5 words. No sentences. No section headers. "
@@ -41,6 +41,9 @@ _PROMPT = (
     "section in the CV. Extract only the language names without "
     "the level. Example: ['Arabe', 'Anglais', 'Français', 'Italien']. "
     "If no language section found, return empty list.\n"
+    "- cv_summary: string — a concise professional summary in French "
+    "(2-4 sentences, max 500 characters) describing the candidate's "
+    "profile, experience, and strengths.\n"
     "No markdown, no code blocks, just the raw JSON."
 )
 
@@ -70,6 +73,7 @@ _EMPTY: Dict[str, Any] = {
     "skills": [],
     "languages": [],
     "education": [],
+    "cv_summary": "",
     "confidence_score": 0.0,
 }
 
@@ -167,6 +171,7 @@ def parse_cv_text(text: str) -> Dict[str, Any]:
             "skills": list(data.get("skills") or []),
             "languages": languages_found,
             "education": list(data.get("education") or []),
+            "cv_summary": str(data.get("cv_summary") or "")[:500],
             "confidence_score": 0.95,
         }
 

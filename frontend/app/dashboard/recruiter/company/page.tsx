@@ -144,7 +144,6 @@ export default function RecruiterCompanyPage() {
     return <RecruiterSetupNotice />;
   }
 
-  const publicSlug = company?.slug || activeCompany.slug;
   const websiteLabel = formatWebsiteDisplay(company?.website);
 
   return (
@@ -212,16 +211,6 @@ export default function RecruiterCompanyPage() {
                     "Complétez votre profil pour attirer les candidats."}
                 </p>
               </div>
-              {publicSlug ? (
-                <Link
-                  href={`/companies/${publicSlug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-2xl bg-white/15 px-5 py-3 text-sm font-semibold transition hover:bg-white/25"
-                >
-                  Voir la page publique
-                </Link>
-              ) : null}
             </div>
           </section>
 

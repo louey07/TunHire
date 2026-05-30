@@ -1,4 +1,5 @@
-import Link from 'next/link'
+import Link from "next/link";
+import HeroSearch from "@/components/marketing/HeroSearch";
 
 export default function Home() {
   return (
@@ -9,6 +10,12 @@ export default function Home() {
             TunHire
           </div>
           <div className="hidden items-center gap-8 md:flex">
+            <Link
+              className="text-sm font-semibold text-[var(--on-surface-variant)] transition-colors hover:text-[var(--primary)]"
+              href="/jobs"
+            >
+              Offres
+            </Link>
             <a
               className="text-sm font-semibold text-[var(--on-surface-variant)] transition-colors hover:text-[var(--primary)]"
               href="#candidats"
@@ -25,13 +32,13 @@ export default function Home() {
               className="text-sm font-semibold text-[var(--on-surface-variant)] transition-colors hover:text-[var(--primary)]"
               href="#ia"
             >
-              IA &amp; Matching
+              IA
             </a>
             <a
               className="text-sm font-semibold text-[var(--on-surface-variant)] transition-colors hover:text-[var(--primary)]"
-              href="#apropos"
+              href="#collaboration"
             >
-              À propos
+              Chat
             </a>
           </div>
           <div className="flex items-center gap-4">
@@ -58,82 +65,61 @@ export default function Home() {
         <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-12 px-6 lg:grid-cols-12">
           <div className="lg:col-span-7">
             <span className="label-uppercase inline-flex rounded-full bg-[#00e3fd]/20 px-4 py-1.5 text-[10px] font-bold text-[var(--secondary)]">
-              Recrutement augmenté
+              Plateforme de recrutement · Tunisie
             </span>
             <h1 className="mt-6 font-headline text-5xl font-extrabold leading-[1.05] text-[var(--primary)] md:text-7xl">
-              Le recrutement d'exception en Tunisie,
-              <span className="block text-[var(--secondary)]">propulsé par l'IA.</span>
+              Trouvez, classez et échangez
+              <span className="block text-[var(--secondary)]">
+                avec les bons talents.
+              </span>
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-[var(--on-surface-variant)] md:text-xl">
-              TunHire connecte les talents premium aux entreprises ambitieuses grâce à une analyse sémantique locale, des scores de compatibilité transparents et une expérience éditoriale soignée.
+              Offres d&apos;emploi, analyse de CV par IA, classement des
+              candidatures avec scores expliqués, et messagerie recruteur–candidat
+              — le tout dans une interface claire et moderne.
             </p>
 
-            <div className="mt-10 flex max-w-3xl flex-col gap-3 rounded-3xl bg-[var(--surface-container-lowest)] p-3 editorial-shadow md:flex-row md:items-center">
-              <div className="flex flex-1 items-center gap-3 rounded-2xl bg-[var(--surface-container-low)] px-4">
-                <span className="h-2 w-2 rounded-full bg-[var(--secondary)]" />
-                <input
-                  aria-label="Métier ou compétence"
-                  className="w-full bg-transparent py-4 text-sm font-medium text-[var(--on-surface)] placeholder:text-[var(--on-surface-variant)] focus:outline-none"
-                  placeholder="Métier ou compétence"
-                  type="text"
-                />
-              </div>
-              <div className="flex flex-1 items-center gap-3 rounded-2xl bg-[var(--surface-container-low)] px-4">
-                <span className="h-2 w-2 rounded-full bg-[var(--secondary)]" />
-                <input
-                  aria-label="Ville"
-                  className="w-full bg-transparent py-4 text-sm font-medium text-[var(--on-surface)] placeholder:text-[var(--on-surface-variant)] focus:outline-none"
-                  placeholder="Tunis, Sfax, Sousse..."
-                  type="text"
-                />
-              </div>
-              <button
-                className="rounded-2xl bg-[var(--secondary)] px-8 py-4 text-sm font-semibold text-white transition-colors hover:bg-[var(--primary)]"
-                type="button"
+            <HeroSearch />
+
+            <div className="mt-8 flex flex-wrap gap-4">
+              <Link
+                className="rounded-2xl bg-[var(--primary)] px-8 py-3.5 text-sm font-semibold text-[var(--on-primary)] shadow-lg transition-transform hover:-translate-y-0.5"
+                href="/login?view=register"
               >
-                Trouver des opportunités
-              </button>
+                Je cherche un emploi
+              </Link>
+              <Link
+                className="rounded-2xl border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-8 py-3.5 text-sm font-semibold text-[var(--primary)] transition-transform hover:-translate-y-0.5"
+                href="/login?view=register"
+              >
+                Je recrute
+              </Link>
             </div>
 
-            <div className="mt-8 flex flex-wrap items-center gap-6">
-              <div className="flex items-center gap-3">
-                <div className="flex -space-x-3">
-                  <img
-                    alt="Professionnelle tunisienne"
-                    className="h-10 w-10 rounded-full border-2 border-white object-cover"
-                    loading="lazy"
-                    src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=200&q=80"
-                  />
-                  <img
-                    alt="Ingénieur tunisien"
-                    className="h-10 w-10 rounded-full border-2 border-white object-cover"
-                    loading="lazy"
-                    src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80"
-                  />
-                  <img
-                    alt="Équipe tech"
-                    className="h-10 w-10 rounded-full border-2 border-white object-cover"
-                    loading="lazy"
-                    src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=200&q=80"
-                  />
-                </div>
-                <p className="text-sm font-medium text-[var(--on-surface-variant)]">
-                  Déjà adopté par <span className="font-bold text-[var(--primary)]">500+</span> entreprises tech
+            <div className="mt-10 flex flex-wrap gap-8">
+              <div>
+                <p className="text-2xl font-headline font-extrabold text-[var(--primary)]">
+                  CV
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--on-surface-variant)]">
+                  parsing automatique
                 </p>
               </div>
-              <div className="flex items-center gap-8">
-                <div>
-                  <p className="text-2xl font-headline font-extrabold text-[var(--primary)]">94%</p>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--on-surface-variant)]">
-                    précision IA
-                  </p>
-                </div>
-                <div>
-                  <p className="text-2xl font-headline font-extrabold text-[var(--primary)]">48h</p>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--on-surface-variant)]">
-                    shortlists
-                  </p>
-                </div>
+              <div>
+                <p className="text-2xl font-headline font-extrabold text-[var(--primary)]">
+                  IA v2
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--on-surface-variant)]">
+                  scores + écarts
+                </p>
+              </div>
+              <div>
+                <p className="text-2xl font-headline font-extrabold text-[var(--primary)]">
+                  Chat
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--on-surface-variant)]">
+                  temps réel
+                </p>
               </div>
             </div>
           </div>
@@ -147,27 +133,33 @@ export default function Home() {
                 src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=900&q=80"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#001e40]/65 via-transparent to-transparent" />
-              <div className="absolute bottom-6 left-6 right-6 flex items-center gap-4 rounded-2xl bg-white/85 p-5 backdrop-blur-xl">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#00e3fd]/30 text-[var(--secondary)]">
-                  <span className="text-lg font-bold">AI</span>
+              <div className="absolute bottom-6 left-6 right-6 space-y-3 rounded-2xl bg-white/90 p-5 backdrop-blur-xl">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#00e3fd]/30 text-[var(--secondary)]">
+                    <span className="text-lg font-bold">AI</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--secondary)]">
+                      Classement IA
+                    </p>
+                    <p className="text-sm font-semibold text-[var(--primary)]">
+                      Développeur Full Stack — 87%
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--secondary)]">
-                    Match prioritaire
-                  </p>
-                  <p className="text-sm font-semibold text-[var(--primary)]">
-                    Lead Data Engineer recommandé
-                  </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="rounded-full bg-[#ffebee] px-2.5 py-1 text-[10px] font-semibold text-[#b71c1c]">
+                    Expérience senior requise
+                  </span>
+                  <span className="rounded-full bg-[#fff3e0] px-2.5 py-1 text-[10px] font-semibold text-[#e65100]">
+                    Remote partiel
+                  </span>
                 </div>
-                <div className="ml-auto rounded-full bg-gradient-to-r from-[#006875] to-[#69ff87] px-3 py-1 text-xs font-bold text-white">
-                  98% compatibilité
-                </div>
+                <p className="text-xs leading-relaxed text-[var(--on-surface-variant)]">
+                  Profil solide en React et Spring Boot, avec un écart modéré sur
+                  l&apos;expérience senior demandée.
+                </p>
               </div>
-            </div>
-            <div className="absolute -right-6 top-12 hidden rounded-3xl bg-[var(--surface-container-highest)] p-5 text-[var(--primary)] ambient-shadow lg:block">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em]">Score IA</p>
-              <p className="mt-2 text-3xl font-headline font-extrabold">9.6</p>
-              <p className="text-xs text-[var(--on-surface-variant)]">Ajustement culturel</p>
             </div>
           </div>
         </div>
@@ -176,12 +168,16 @@ export default function Home() {
       <section id="ia" className="bg-[var(--surface-container-low)] py-24">
         <div className="mx-auto w-full max-w-7xl px-6">
           <div className="text-center">
-            <p className="label-uppercase text-[10px] font-bold text-[var(--secondary)]">Cadre de précision</p>
+            <p className="label-uppercase text-[10px] font-bold text-[var(--secondary)]">
+              Intelligence recrutement
+            </p>
             <h2 className="mt-4 font-headline text-4xl font-extrabold text-[var(--primary)] md:text-5xl">
-              Une intelligence recrutement de bout en bout
+              De l&apos;analyse de CV au classement expliqué
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-[var(--on-surface-variant)]">
-              Notre moteur analyse le marché tunisien en temps réel, compare les compétences et anticipe la compatibilité pour réduire les erreurs de recrutement.
+              Le moteur IA compare profils et offres de façon structurée, avec
+              des scores transparents pour aider les recruteurs à décider plus
+              vite.
             </p>
           </div>
           <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -189,137 +185,240 @@ export default function Home() {
               <div className="mb-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#00e3fd]/20 text-[var(--secondary)]">
                 <span className="text-2xl font-bold">01</span>
               </div>
-              <h3 className="font-headline text-xl font-bold text-[var(--primary)]">Matching cognitif</h3>
+              <h3 className="font-headline text-xl font-bold text-[var(--primary)]">
+                Analyse de CV
+              </h3>
               <p className="mt-3 text-sm leading-relaxed text-[var(--on-surface-variant)]">
-                Des scores de compatibilité expliqués, basés sur la technicité, la culture d'entreprise et le potentiel d'évolution.
+                Importez un PDF : compétences, formation, langues et résumé sont
+                extraits automatiquement dans le profil candidat.
               </p>
-              <div className="mt-6 flex items-center gap-2">
-                <div className="h-2 w-24 rounded-full bg-gradient-to-r from-[#006875] to-[#69ff87]" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--secondary)]">IA match</span>
+              <div className="mt-6 rounded-xl bg-[var(--surface-container-low)] p-4">
+                <p className="text-xs font-semibold text-[var(--primary)]">
+                  12 compétences détectées · 2 langues · résumé IA
+                </p>
               </div>
             </div>
             <div className="rounded-[2rem] bg-[var(--primary)] p-8 text-white editorial-shadow md:translate-y-6">
               <div className="mb-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-[#00daf3]">
                 <span className="text-2xl font-bold">02</span>
               </div>
-              <h3 className="font-headline text-xl font-bold">Recherche sémantique</h3>
+              <h3 className="font-headline text-xl font-bold">
+                Classement hybride
+              </h3>
               <p className="mt-3 text-sm leading-relaxed text-white/70">
-                L'IA comprend les contextes projet, les soft skills et les signaux faibles pour détecter des talents rares.
+                Embeddings sémantiques, règles métier et analyse LLM produisent
+                un score, des écarts et un résumé pour chaque candidature.
               </p>
-              <div className="mt-6 rounded-xl bg-white/5 p-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#00daf3]">Commande IA</p>
-                <p className="mt-2 text-xs italic text-white/70">
-                  "Montre-moi des designers UI ayant livré des apps fintech en Afrique du Nord."
-                </p>
+              <div className="mt-6 flex items-center gap-2">
+                <div className="h-2 w-24 rounded-full bg-gradient-to-r from-[#00daf3] to-[#69ff87]" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#00daf3]">
+                  v2 rank
+                </span>
               </div>
             </div>
             <div className="rounded-[2rem] bg-[var(--surface-container-lowest)] p-8 editorial-shadow">
               <div className="mb-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#69ff87]/20 text-[#1f7a3f]">
                 <span className="text-2xl font-bold">03</span>
               </div>
-              <h3 className="font-headline text-xl font-bold text-[var(--primary)]">Extraction d'expertise</h3>
+              <h3 className="font-headline text-xl font-bold text-[var(--primary)]">
+                Cache intelligent
+              </h3>
               <p className="mt-3 text-sm leading-relaxed text-[var(--on-surface-variant)]">
-                Les CV sont transformés en profils exploitables et vérifiés par des assessments automatisés.
+                Les scores sont mis en cache et recalculés uniquement si le
+                profil ou l&apos;offre change — affichage instantané au
+                reclassement.
               </p>
               <div className="mt-6 rounded-xl bg-[var(--surface-container-low)] p-4">
-                <p className="text-xs font-semibold text-[var(--primary)]">Signal IA: 12 compétences critiques détectées</p>
+                <p className="text-xs font-semibold text-[var(--primary)]">
+                  Sync-on-read · hash de version profil
+                </p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="candidats" className="py-24">
+      <section id="collaboration" className="py-24">
         <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-16 px-6 lg:grid-cols-2">
-          <div className="order-2 lg:order-1">
-            <div className="relative rounded-[2.5rem] bg-[var(--surface-container-low)] p-4 editorial-shadow">
-              <div className="rounded-[2rem] bg-[var(--surface-container-lowest)] p-8">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-headline text-lg font-bold text-[var(--primary)]">Tableau de bord</h4>
-                    <p className="text-xs text-[var(--on-surface-variant)]">Bienvenue, Ahmed</p>
-                  </div>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--surface-container-highest)] text-[var(--primary)]">
-                    <span className="text-sm font-bold">3</span>
-                  </div>
-                </div>
-                <div className="mt-10 space-y-4">
-                  <div className="flex items-center justify-between rounded-2xl bg-[var(--surface)] p-4 transition-colors hover:bg-[var(--surface-container-highest)]">
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--primary)] text-white">
-                        TN
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-[var(--primary)]">Senior UI Designer</p>
-                        <p className="text-xs text-[var(--on-surface-variant)]">TechTunisia - La Marsa</p>
-                      </div>
-                    </div>
-                    <span className="rounded-full bg-[#00e3fd]/20 px-3 py-1 text-[10px] font-bold text-[var(--secondary)]">
-                      92% match
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-2xl bg-[var(--surface)] p-4">
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--secondary)] text-white">
-                        S
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-[var(--primary)]">Growth Manager</p>
-                        <p className="text-xs text-[var(--on-surface-variant)]">Sousse Startup Lab - Hybride</p>
-                      </div>
-                    </div>
-                    <span className="rounded-full bg-[#69ff87]/30 px-3 py-1 text-[10px] font-bold text-[#0b5a2a]">
-                      Nouveau
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-8">
-                  <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--primary)]">
-                    <span>Progression</span>
-                    <span className="text-[var(--secondary)]">48% global</span>
-                  </div>
-                  <div className="mt-3 h-2 rounded-full bg-[var(--surface-container-highest)]">
-                    <div className="h-2 w-1/2 rounded-full bg-[var(--secondary)]" />
-                  </div>
-                </div>
-              </div>
-              <div className="absolute -right-16 top-20 h-36 w-36 rounded-full bg-[#00daf3]/20 blur-3xl" />
-            </div>
-          </div>
-          <div className="order-1 lg:order-2">
-            <p className="label-uppercase text-[10px] font-bold text-[var(--secondary)]">Expérience candidat</p>
+          <div>
+            <p className="label-uppercase text-[10px] font-bold text-[var(--secondary)]">
+              Collaboration
+            </p>
             <h2 className="mt-4 font-headline text-4xl font-extrabold text-[var(--primary)] md:text-5xl">
-              Des opportunités qui viennent à vous.
+              Messagerie et notifications intégrées
             </h2>
             <p className="mt-6 text-lg leading-relaxed text-[var(--on-surface-variant)]">
-              Fini le scrolling interminable. TunHire détecte les rôles qui respectent votre trajectoire, votre énergie et votre ambition.
+              Les recruteurs contactent les candidats directement depuis la
+              fiche profil. Les messages non lus et les mises à jour de statut
+              apparaissent comme indicateurs dans la barre latérale.
             </p>
             <div className="mt-8 space-y-6">
               <div className="flex gap-4">
-                <div className="mt-1 h-6 w-6 rounded-full bg-[#006875]/10" />
+                <div className="mt-1 h-6 w-6 shrink-0 rounded-full bg-[#006875]/10" />
                 <div>
-                  <p className="text-sm font-bold text-[var(--primary)]">Compatibilité transparente</p>
+                  <p className="text-sm font-bold text-[var(--primary)]">
+                    Chat direct recruteur ↔ candidat
+                  </p>
                   <p className="text-sm text-[var(--on-surface-variant)]">
-                    Comprenez pourquoi vous êtes en haut de la pile.
+                    WebSocket temps réel, conversations par entreprise.
                   </p>
                 </div>
               </div>
               <div className="flex gap-4">
-                <div className="mt-1 h-6 w-6 rounded-full bg-[#006875]/10" />
+                <div className="mt-1 h-6 w-6 shrink-0 rounded-full bg-[#006875]/10" />
                 <div>
-                  <p className="text-sm font-bold text-[var(--primary)]">Badge de compétences vérifiées</p>
+                  <p className="text-sm font-bold text-[var(--primary)]">
+                    Badges non lus
+                  </p>
                   <p className="text-sm text-[var(--on-surface-variant)]">
-                    Valorisez vos forces avec des tests courts et précis.
+                    Points rouges sur Chat, Candidats et Mes candidatures.
                   </p>
                 </div>
               </div>
             </div>
-            <button
-              className="mt-10 rounded-2xl bg-[var(--primary)] px-10 py-4 text-sm font-semibold text-[var(--on-primary)] shadow-lg transition-transform hover:-translate-y-0.5"
-              type="button"
+            <Link
+              className="mt-10 inline-flex rounded-2xl bg-[var(--primary)] px-10 py-4 text-sm font-semibold text-[var(--on-primary)] shadow-lg transition-transform hover:-translate-y-0.5"
+              href="/login"
             >
-              Créer mon profil gratuit
-            </button>
+              Se connecter
+            </Link>
+          </div>
+          <div className="rounded-[2.5rem] bg-[var(--surface-container-low)] p-4 editorial-shadow">
+            <div className="rounded-[2rem] bg-[var(--surface-container-lowest)] p-6">
+              <div className="flex items-center justify-between border-b border-[var(--outline-variant)] pb-4">
+                <p className="font-headline text-sm font-bold text-[var(--primary)]">
+                  Messages
+                </p>
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
+                </span>
+              </div>
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center gap-3 rounded-2xl bg-[var(--surface-container-low)] p-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--primary)] text-xs font-bold text-white">
+                    MR
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-[var(--primary)]">
+                      Marie R. — TechCorp
+                    </p>
+                    <p className="text-xs text-[var(--on-surface-variant)]">
+                      Bonjour, votre profil nous intéresse…
+                    </p>
+                  </div>
+                  <span className="h-2 w-2 rounded-full bg-red-500" />
+                </div>
+                <div className="flex items-center gap-3 rounded-2xl p-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--secondary)] text-xs font-bold text-white">
+                    TH
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-[var(--primary)]">
+                      Équipe TechCorp
+                    </p>
+                    <p className="text-xs text-[var(--on-surface-variant)]">
+                      Entretien confirmé pour jeudi
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="candidats" className="bg-[var(--surface-container-low)] py-24">
+        <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-16 px-6 lg:grid-cols-2">
+          <div className="order-2 lg:order-1">
+            <div className="relative rounded-[2.5rem] bg-[var(--surface-container-lowest)] p-4 editorial-shadow">
+              <div className="rounded-[2rem] bg-[var(--surface)] p-8">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-headline text-lg font-bold text-[var(--primary)]">
+                      Mes candidatures
+                    </h4>
+                    <p className="text-xs text-[var(--on-surface-variant)]">
+                      Suivi en temps réel
+                    </p>
+                  </div>
+                  <span className="relative flex h-3 w-3">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                    <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+                  </span>
+                </div>
+                <div className="mt-8 space-y-4">
+                  <div className="flex items-center justify-between rounded-2xl bg-[var(--surface-container-low)] p-4">
+                    <div>
+                      <p className="text-sm font-semibold text-[var(--primary)]">
+                        Développeur Full Stack
+                      </p>
+                      <p className="text-xs text-[var(--on-surface-variant)]">
+                        TechCorp · Tunis · Hybride
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-[#69ff87]/30 px-3 py-1 text-[10px] font-bold text-[#0b5a2a]">
+                      Entretien
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl bg-[var(--surface-container-low)] p-4">
+                    <div>
+                      <p className="text-sm font-semibold text-[var(--primary)]">
+                        Data Analyst
+                      </p>
+                      <p className="text-xs text-[var(--on-surface-variant)]">
+                        FinStart · Sfax · Sur site
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-[#00e3fd]/20 px-3 py-1 text-[10px] font-bold text-[var(--secondary)]">
+                      En cours
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="order-1 lg:order-2">
+            <p className="label-uppercase text-[10px] font-bold text-[var(--secondary)]">
+              Expérience candidat
+            </p>
+            <h2 className="mt-4 font-headline text-4xl font-extrabold text-[var(--primary)] md:text-5xl">
+              Postulez, suivez, échangez.
+            </h2>
+            <p className="mt-6 text-lg leading-relaxed text-[var(--on-surface-variant)]">
+              Recherchez des offres avec filtres avancés, enrichissez votre
+              profil via CV, et restez informé des changements de statut.
+            </p>
+            <div className="mt-8 space-y-6">
+              <div className="flex gap-4">
+                <div className="mt-1 h-6 w-6 shrink-0 rounded-full bg-[#006875]/10" />
+                <div>
+                  <p className="text-sm font-bold text-[var(--primary)]">
+                    Recherche d&apos;offres filtrée
+                  </p>
+                  <p className="text-sm text-[var(--on-surface-variant)]">
+                    Mode de travail, contrat, expérience et localisation.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <div className="mt-1 h-6 w-6 shrink-0 rounded-full bg-[#006875]/10" />
+                <div>
+                  <p className="text-sm font-bold text-[var(--primary)]">
+                    Profil enrichi par CV
+                  </p>
+                  <p className="text-sm text-[var(--on-surface-variant)]">
+                    Compétences, formation et langues importées automatiquement.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <Link
+              className="mt-10 inline-flex rounded-2xl bg-[var(--primary)] px-10 py-4 text-sm font-semibold text-[var(--on-primary)] shadow-lg transition-transform hover:-translate-y-0.5"
+              href="/login?view=register"
+            >
+              Créer mon compte candidat
+            </Link>
           </div>
         </div>
       </section>
@@ -334,83 +433,74 @@ export default function Home() {
         </div>
         <div className="relative mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-14 px-6 lg:grid-cols-12">
           <div className="lg:col-span-6">
-            <p className="label-uppercase text-[10px] font-bold text-[#00daf3]">Solutions entreprises</p>
+            <p className="label-uppercase text-[10px] font-bold text-[#00daf3]">
+              Solutions entreprises
+            </p>
             <h2 className="mt-4 font-headline text-4xl font-extrabold md:text-5xl">
-              Un recrutement de précision à grande échelle.
+              Pilotez vos recrutements de A à Z.
             </h2>
             <p className="mt-6 text-lg leading-relaxed text-white/70">
-              Gagnez du temps sans perdre l'exigence. L'IA priorise les profils, génère des fiches de poste et orchestre vos pipelines de recrutement.
+              Publiez des offres, classez les candidatures par IA, consultez les
+              CV en PDF et prenez vos décisions depuis une fiche candidat
+              complète.
             </p>
             <div className="mt-10 grid grid-cols-2 gap-8">
               <div>
-                <p className="text-3xl font-headline font-extrabold">70%</p>
+                <p className="text-3xl font-headline font-extrabold">IA</p>
                 <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/60">
-                  temps de recrutement
+                  classement + écarts
                 </p>
               </div>
               <div>
-                <p className="text-3xl font-headline font-extrabold">94%</p>
+                <p className="text-3xl font-headline font-extrabold">Équipe</p>
                 <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/60">
-                  taux de match
+                  multi-recruteurs
                 </p>
               </div>
             </div>
-            <button
-              className="mt-12 rounded-2xl bg-[#00e3fd] px-10 py-4 text-sm font-semibold text-[#003366] transition-transform hover:-translate-y-0.5"
-              type="button"
+            <Link
+              className="mt-12 inline-flex rounded-2xl bg-[#00e3fd] px-10 py-4 text-sm font-semibold text-[#003366] transition-transform hover:-translate-y-0.5"
+              href="/login?view=register"
             >
-              Planifier une démo
-            </button>
+              Créer un compte recruteur
+            </Link>
           </div>
           <div className="lg:col-span-6">
             <div className="rounded-[3rem] bg-white/5 p-8 backdrop-blur-xl">
-              <div className="space-y-6">
-                <div className="rounded-2xl bg-white p-6 text-[var(--primary)] ambient-shadow">
-                  <div className="flex items-center gap-4">
-                    <img
-                      alt="Candidat cloud"
-                      className="h-12 w-12 rounded-full object-cover"
-                      loading="lazy"
-                      src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80"
-                    />
-                    <div className="flex-1">
-                      <p className="text-sm font-bold">Sami Ben Jomaa</p>
-                      <p className="text-xs text-[var(--on-surface-variant)]">Senior Cloud Architect</p>
-                    </div>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full border-4 border-[#00daf3]/20">
-                      <span className="text-[10px] font-black text-[var(--secondary)]">98</span>
-                    </div>
+              <div className="rounded-2xl bg-white p-6 text-[var(--primary)] ambient-shadow">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--primary)] text-sm font-bold text-white">
+                    SB
                   </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <span className="rounded-md bg-[var(--surface-container-low)] px-2 py-1 text-[10px] font-bold uppercase text-[var(--primary)]">
-                      AWS Pro
-                    </span>
-                    <span className="rounded-md bg-[var(--surface-container-low)] px-2 py-1 text-[10px] font-bold uppercase text-[var(--primary)]">
-                      Kubernetes
-                    </span>
-                    <span className="rounded-md bg-[var(--surface-container-low)] px-2 py-1 text-[10px] font-bold uppercase text-[var(--primary)]">
-                      DevOps
-                    </span>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold">Sami Ben Jomaa</p>
+                    <p className="text-xs text-[var(--on-surface-variant)]">
+                      Développeur Full Stack · 5 ans
+                    </p>
                   </div>
-                  <div className="mt-4 flex items-center gap-2 rounded-lg bg-[#69ff87]/20 p-3">
-                    <span className="text-[10px] font-bold text-[#0b5a2a]">IA: top 2% Tunisie</span>
+                  <div className="rounded-full bg-gradient-to-r from-[#006875] to-[#69ff87] px-3 py-1 text-xs font-bold text-white">
+                    87%
                   </div>
                 </div>
-                <div className="rounded-2xl bg-[#003366] p-6 text-white">
-                  <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#00daf3]">
-                      IA contenu
-                    </p>
-                    <span className="text-sm font-bold">+</span>
-                  </div>
-                  <p className="mt-4 text-sm text-white/70">
-                    "Génère une fiche de poste pour un Lead Developer dans une fintech à Tunis, orientée sécurité et croissance."
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="rounded-md bg-[var(--surface-container-low)] px-2 py-1 text-[10px] font-bold uppercase text-[var(--primary)]">
+                    React
+                  </span>
+                  <span className="rounded-md bg-[var(--surface-container-low)] px-2 py-1 text-[10px] font-bold uppercase text-[var(--primary)]">
+                    Spring Boot
+                  </span>
+                  <span className="rounded-md bg-[var(--surface-container-low)] px-2 py-1 text-[10px] font-bold uppercase text-[var(--primary)]">
+                    PostgreSQL
+                  </span>
+                </div>
+                <div className="mt-4 space-y-2 rounded-lg bg-[var(--surface-container-low)] p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--secondary)]">
+                    Analyse IA
                   </p>
-                  <div className="mt-4 flex gap-2">
-                    <div className="h-1 w-12 rounded-full bg-[#00daf3]" />
-                    <div className="h-1 w-12 rounded-full bg-white/20" />
-                    <div className="h-1 w-12 rounded-full bg-white/20" />
-                  </div>
+                  <p className="text-xs leading-relaxed text-[var(--on-surface-variant)]">
+                    Bon alignement technique ; écart sur le niveau senior et le
+                    mode remote partiel.
+                  </p>
                 </div>
               </div>
             </div>
@@ -421,14 +511,18 @@ export default function Home() {
       <section className="bg-[var(--surface-container-lowest)] py-14">
         <div className="mx-auto w-full max-w-7xl px-6">
           <p className="text-center text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--on-surface-variant)]">
-            Ils font confiance à TunHire
+            Stack technique
           </p>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-12 text-[var(--primary)]/60">
-            <span className="font-headline text-2xl font-extrabold tracking-tight">TECH-TN</span>
-            <span className="font-headline text-2xl font-extrabold tracking-tight">CART-HAGE</span>
-            <span className="font-headline text-2xl font-extrabold tracking-tight">SAHARA.AI</span>
-            <span className="font-headline text-2xl font-extrabold tracking-tight">MEDITERRANEA</span>
-            <span className="font-headline text-2xl font-extrabold tracking-tight">NORTHHUB</span>
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-8 text-sm font-semibold text-[var(--primary)]/70">
+            <span>Next.js</span>
+            <span className="text-[var(--outline-variant)]">·</span>
+            <span>Spring Boot</span>
+            <span className="text-[var(--outline-variant)]">·</span>
+            <span>FastAPI</span>
+            <span className="text-[var(--outline-variant)]">·</span>
+            <span>PostgreSQL</span>
+            <span className="text-[var(--outline-variant)]">·</span>
+            <span>Groq</span>
           </div>
         </div>
       </section>
@@ -438,37 +532,49 @@ export default function Home() {
           <div className="rounded-[2.5rem] bg-[var(--surface-container-low)] p-12 editorial-shadow">
             <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
               <div>
-                <p className="label-uppercase text-[10px] font-bold text-[var(--secondary)]">Vision TunHire</p>
+                <p className="label-uppercase text-[10px] font-bold text-[var(--secondary)]">
+                  Vision TunHire
+                </p>
                 <h2 className="mt-4 font-headline text-4xl font-extrabold text-[var(--primary)]">
-                  Une plateforme d'excellence pour le marché tunisien.
+                  Une plateforme complète pour le marché tunisien.
                 </h2>
                 <p className="mt-6 text-lg text-[var(--on-surface-variant)]">
-                  Nous construisons un environnement premium, inspiré des publications éditoriales, pour offrir une expérience claire, humaine et responsable.
+                  Projet de fin d&apos;études couvrant authentification, gestion
+                  d&apos;entreprises, offres, candidatures, IA et messagerie —
+                  avec une interface soignée et des scores transparents.
                 </p>
               </div>
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="rounded-2xl bg-[var(--surface-container-lowest)] p-6">
-                  <p className="text-sm font-bold text-[var(--primary)]">Éthique et confiance</p>
+                  <p className="text-sm font-bold text-[var(--primary)]">
+                    Scores expliqués
+                  </p>
                   <p className="mt-2 text-sm text-[var(--on-surface-variant)]">
-                    Transparence sur les scores et les données utilisées.
+                    Écarts et résumés IA visibles par les recruteurs.
                   </p>
                 </div>
                 <div className="rounded-2xl bg-[var(--surface-container-lowest)] p-6">
-                  <p className="text-sm font-bold text-[var(--primary)]">Impact local</p>
+                  <p className="text-sm font-bold text-[var(--primary)]">
+                    Impact local
+                  </p>
                   <p className="mt-2 text-sm text-[var(--on-surface-variant)]">
-                    Conçu pour les besoins du marché tunisien et maghrébin.
+                    Conçu pour les besoins du marché tunisien.
                   </p>
                 </div>
                 <div className="rounded-2xl bg-[var(--surface-container-lowest)] p-6">
-                  <p className="text-sm font-bold text-[var(--primary)]">Précision continue</p>
+                  <p className="text-sm font-bold text-[var(--primary)]">
+                    Collaboration intégrée
+                  </p>
                   <p className="mt-2 text-sm text-[var(--on-surface-variant)]">
-                    L'IA apprend en continu pour améliorer les recommandations.
+                    Chat et notifications sans outil externe.
                   </p>
                 </div>
                 <div className="rounded-2xl bg-[var(--surface-container-lowest)] p-6">
-                  <p className="text-sm font-bold text-[var(--primary)]">Qualité éditoriale</p>
+                  <p className="text-sm font-bold text-[var(--primary)]">
+                    Qualité éditoriale
+                  </p>
                   <p className="mt-2 text-sm text-[var(--on-surface-variant)]">
-                    Une interface soignée pour des décisions plus rapides.
+                    Interface claire pour des décisions plus rapides.
                   </p>
                 </div>
               </div>
@@ -479,18 +585,41 @@ export default function Home() {
 
       <footer className="bg-[var(--surface-container-low)]">
         <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-10 px-6 py-12 md:grid-cols-4">
-          <div className="md:col-span-1">
+          <div className="md:col-span-2">
             <p className="text-lg font-bold text-[var(--primary)]">TunHire</p>
-            <p className="mt-3 text-xs leading-relaxed text-[var(--on-surface-variant)]">
-              L'intelligence du recrutement pour le marché tunisien. Des décisions plus rapides, plus justes, plus humaines.
+            <p className="mt-3 max-w-sm text-xs leading-relaxed text-[var(--on-surface-variant)]">
+              Recrutement intelligent pour le marché tunisien — offres,
+              candidatures, classement IA et messagerie.
             </p>
           </div>
-  
-        </div>
-        <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-4 px-6 pb-10 text-xs uppercase tracking-[0.2em] text-[var(--on-surface-variant)] md:flex-row">
-          <p>© 2026 TunHire. Excellence IA pour le recrutement tunisien.</p>
-          <div className="flex items-center gap-6">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--primary)]">
+              Plateforme
+            </p>
+            <div className="mt-4 flex flex-col gap-2">
+              <Link
+                className="text-sm text-[var(--on-surface-variant)] hover:text-[var(--primary)]"
+                href="/jobs"
+              >
+                Voir les offres
+              </Link>
+              <Link
+                className="text-sm text-[var(--on-surface-variant)] hover:text-[var(--primary)]"
+                href="/login"
+              >
+                Connexion
+              </Link>
+              <Link
+                className="text-sm text-[var(--on-surface-variant)] hover:text-[var(--primary)]"
+                href="/login?view=register"
+              >
+                Inscription
+              </Link>
+            </div>
           </div>
+        </div>
+        <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-4 border-t border-[var(--outline-variant)] px-6 py-6 text-xs text-[var(--on-surface-variant)] md:flex-row">
+          <p>© 2026 TunHire. Projet PFE — recrutement augmenté par l&apos;IA.</p>
         </div>
       </footer>
     </div>
