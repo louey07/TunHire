@@ -165,6 +165,14 @@ export function useCandidateProfile() {
   }
 
   async function handleCVFile(file: File) {
+    const isPdf =
+      file.type === "application/pdf" ||
+      file.name.toLowerCase().endsWith(".pdf");
+    if (!isPdf) {
+      setCvMsg("Seuls les fichiers PDF sont acceptés.");
+      return;
+    }
+
     setCvParsing(true);
     setCvMsg("");
     try {

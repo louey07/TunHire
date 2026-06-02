@@ -168,14 +168,6 @@ export default function RecruiterJobCard({
               >
                 Classement IA
               </Link>
-              <Link
-                href={`/jobs/${job.id}`}
-                role="menuitem"
-                className="flex items-center px-4 py-2.5 text-sm text-[var(--on-surface)] transition hover:bg-[var(--surface-container-low)]"
-                onClick={() => setMenuOpen(false)}
-              >
-                Aperçu public
-              </Link>
               <div className="my-1 border-t border-[color-mix(in_srgb,var(--outline-variant)_15%,transparent)]" />
               <button
                 type="button"

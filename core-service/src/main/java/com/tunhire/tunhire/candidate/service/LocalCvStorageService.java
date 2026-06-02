@@ -14,8 +14,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class LocalCvStorageService implements CvStorageService {
 
     private static final String PDF_TYPE = "application/pdf";
-    private static final String DOCX_TYPE =
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
     private final Path uploadsRoot;
     private final long maxCvSize;
@@ -43,11 +41,11 @@ public class LocalCvStorageService implements CvStorageService {
         }
 
         String extension = extensionOf(originalName);
-        if (!"pdf".equals(extension) && !"docx".equals(extension)) {
-            throw new IllegalArgumentException("Only PDF and DOCX files are allowed.");
+        if (!"pdf".equals(extension)) {
+            throw new IllegalArgumentException("Only PDF files are allowed.");
         }
 
-        String contentType = "pdf".equals(extension) ? PDF_TYPE : DOCX_TYPE;
+        String contentType = PDF_TYPE;
         String storageKey = userId + "/" + UUID.randomUUID() + "." + extension;
         Path target = resolvePath(storageKey);
 

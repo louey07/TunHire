@@ -8,8 +8,8 @@ router = APIRouter()
 
 @router.post("/parse", response_model=CVParseResult)
 async def parse_cv(file: UploadFile = File(...)):
-    if not file.filename.lower().endswith((".pdf", ".docx")):
-        raise HTTPException(status_code=400, detail="Only PDF and DOCX files are allowed.")
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are allowed.")
 
     try:
         text = await extract_text_from_file(file)

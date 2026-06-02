@@ -350,12 +350,6 @@ export default function JobsPage() {
               {selectedJob ? (
                 <div className="border-t border-[color-mix(in_srgb,var(--outline-variant)_12%,transparent)] bg-[var(--surface-container-low)] p-5">
                   <div className="flex flex-wrap gap-3">
-                    <Link
-                      href={`/jobs/${selectedJob.id}`}
-                      className="btn-primary rounded-xl px-6 py-3 text-sm"
-                    >
-                      Voir l&apos;offre complète
-                    </Link>
                     {user?.role === "CANDIDATE" ? (
                       <button
                         type="button"
@@ -364,7 +358,7 @@ export default function JobsPage() {
                           applyingJobId === selectedJob.id ||
                           appliedJobIds.includes(selectedJob.id)
                         }
-                        className="rounded-xl border border-[color-mix(in_srgb,var(--outline-variant)_25%,transparent)] bg-white px-6 py-3 text-sm font-semibold text-[var(--primary)] disabled:opacity-50"
+                        className="btn-primary rounded-xl px-6 py-3 text-sm disabled:opacity-50"
                       >
                         {appliedJobIds.includes(selectedJob.id)
                           ? "Candidature envoyée"
@@ -440,12 +434,6 @@ export default function JobsPage() {
                 {selectedJob.description}
               </p>
               <div className="sticky bottom-0 mt-6 flex flex-wrap gap-3 border-t border-[color-mix(in_srgb,var(--outline-variant)_12%,transparent)] bg-[var(--surface-container-lowest)] pt-4">
-                <Link
-                  href={`/jobs/${selectedJob.id}`}
-                  className="btn-primary rounded-xl px-6 py-3 text-sm"
-                >
-                  Voir l&apos;offre complète
-                </Link>
                 {user?.role === "CANDIDATE" ? (
                   <button
                     type="button"
@@ -454,7 +442,7 @@ export default function JobsPage() {
                       applyingJobId === selectedJob.id ||
                       appliedJobIds.includes(selectedJob.id)
                     }
-                    className="rounded-xl border border-[color-mix(in_srgb,var(--outline-variant)_25%,transparent)] bg-white px-6 py-3 text-sm font-semibold text-[var(--primary)] disabled:opacity-50"
+                    className="btn-primary rounded-xl px-6 py-3 text-sm disabled:opacity-50"
                   >
                     {appliedJobIds.includes(selectedJob.id)
                       ? "Candidature envoyée"

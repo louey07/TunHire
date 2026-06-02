@@ -88,12 +88,6 @@ export default function DashboardRecentJobs({ jobs }: DashboardRecentJobsProps) 
                   >
                     Candidats
                   </Link>
-                  <Link
-                    href={`/jobs/${job.id}`}
-                    className="font-semibold text-[var(--secondary)] hover:underline"
-                  >
-                    Aperçu public
-                  </Link>
                 </div>
               </li>
             );

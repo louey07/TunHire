@@ -36,7 +36,7 @@ export default function CvUploadSection({
             Mon CV
           </h3>
           <p className="mt-1 text-sm text-[var(--on-surface-variant)]">
-            Importez un PDF ou DOCX pour remplir votre profil automatiquement.
+            Importez un PDF pour remplir votre profil automatiquement.
           </p>
         </div>
         <div className="flex gap-2">
@@ -61,7 +61,7 @@ export default function CvUploadSection({
           <input
             ref={fileInputRef}
             type="file"
-            accept=".pdf,.docx"
+            accept=".pdf,application/pdf"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
