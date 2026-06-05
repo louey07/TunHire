@@ -1,27 +1,27 @@
 # TunHire
 
-**TunHire** is an AI-powered recruitment platform that connects candidates and recruiters in Tunisia. Candidates upload a PDF CV and apply to jobs; recruiters manage companies, publish offers, rank applicants with a hybrid AI score, and communicate in real time.
+**TunHire** est une plateforme de recrutement intelligente qui met en relation candidats et recruteurs en Tunisie. Les candidats déposent un CV PDF et postulent aux offres ; les recruteurs gèrent leur entreprise, publient des offres, classent les candidatures grâce à un score IA hybride et communiquent en temps réel.
 
-Built as a **Projet de Fin d'Études** at ISET Bizerte, in partnership with **RIF Tunisie**.
+Projet réalisé dans le cadre d'un **Projet de Fin d'Études** à l'**ISET Bizerte**, en partenariat avec **RIF Tunisie**.
 
-## Features
+## Fonctionnalités
 
-### Candidates
-- Register / login (JWT)
-- Browse open job offers (public listing with pagination)
-- Upload a **PDF CV** — skills and profile fields extracted via Groq (LLaMA 3.3)
-- Manage profile and skills
-- Apply to jobs and track application status
-- Real-time messaging with recruiters
+### Côté candidat
+- Inscription / connexion (JWT)
+- Consultation des offres ouvertes (liste publique avec pagination)
+- Import d'un **CV PDF** — compétences et champs de profil extraits via Groq (LLaMA 3.3)
+- Gestion du profil et des compétences
+- Candidature aux offres et suivi du statut
+- Messagerie temps réel avec les recruteurs
 
-### Recruiters
-- Create and manage a **company workspace**
-- Invite team members (`RECRUITER_ADMIN` / `MEMBER`)
-- Publish and lifecycle-manage jobs (`DRAFT` → `OPEN` → `CLOSED`)
-- View applications and update status (`SUBMITTED`, `IN_REVIEW`, `SHORTLISTED`, `REJECTED`)
-- **AI ranking** — hybrid compatibility score (SBERT + business rules + Groq)
-- Cached scores in `application_match_scores` (recalculated when job or profile changes)
-- Dashboard, notifications, WebSocket chat
+### Côté recruteur
+- Création et gestion d'un **espace entreprise**
+- Invitation des membres d'équipe (`RECRUITER_ADMIN` / `MEMBER`)
+- Publication et cycle de vie des offres (`DRAFT` → `OPEN` → `CLOSED`)
+- Consultation des candidatures et mise à jour du statut (`SUBMITTED`, `IN_REVIEW`, `SHORTLISTED`, `REJECTED`)
+- **Classement IA** — score de compatibilité hybride (SBERT + règles métier + Groq)
+- Scores mis en cache dans `application_match_scores` (recalcul si l'offre ou le profil change)
+- Tableau de bord, notifications, chat WebSocket
 
 ## Architecture
 
@@ -39,35 +39,35 @@ Built as a **Projet de Fin d'Études** at ISET Bizerte, in partnership with **RI
                                                └──────────────────┘
 
                         ┌──────────────────┐
-                        │   PostgreSQL     │  ← core-service only
+                        │   PostgreSQL     │  ← core-service uniquement
                         └──────────────────┘
 ```
 
-| Service | Role | Default port (local dev) |
-|---------|------|---------------------------|
-| `frontend` | React / Next.js UI | `3000` |
-| `core-service` | Business logic, auth, persistence | `8181` |
-| `ai-service` | CV parsing, matching, ranking | `8000` |
-| PostgreSQL | Database | `15432` (host) |
+| Service | Rôle | Port par défaut (dev local) |
+|---------|------|-----------------------------|
+| `frontend` | Interface Next.js / React | `3000` |
+| `core-service` | Logique métier, auth, persistance | `8181` |
+| `ai-service` | Parsing CV, matching, classement | `8000` |
+| PostgreSQL | Base de données | `15432` (hôte) |
 
-The AI microservice is **stateless** — it does not connect to PostgreSQL. The core service calls it over HTTP and stores results (including match scores).
+Le microservice IA est **stateless** — il ne se connecte pas à PostgreSQL. Le core-service l'appelle en HTTP et persiste les résultats (y compris les scores de matching).
 
-## Tech stack
+## Stack technique
 
-| Layer | Technologies |
-|-------|----------------|
+| Couche | Technologies |
+|--------|----------------|
 | Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS, STOMP/WebSocket |
 | Backend | Java 21, Spring Boot 3.4, Spring Security, Spring Modulith, JPA, PostgreSQL |
-| AI service | Python, FastAPI, pdfplumber, Sentence Transformers (SBERT), Groq API |
-| Auth | JWT (stateless), BCrypt |
-| DevOps | Docker Compose (optional), Maven, npm |
+| Service IA | Python, FastAPI, pdfplumber, Sentence Transformers (SBERT), API Groq |
+| Authentification | JWT (stateless), BCrypt |
+| DevOps | Docker Compose (optionnel), Maven, npm |
 
-## Project structure
+## Structure du projet
 
 ```
 TunHire_fork/
-├── frontend/          # Next.js App Router UI
-├── core-service/      # Spring Boot modular monolith
+├── frontend/          # Interface Next.js (App Router)
+├── core-service/      # Monolithe modulaire Spring Boot
 │   ├── src/main/java/com/tunhire/tunhire/
 │   │   ├── auth/
 │   │   ├── candidate/
@@ -76,56 +76,56 @@ TunHire_fork/
 │   │   ├── applications/
 │   │   ├── chat/
 │   │   └── notifications/
-│   └── compose.yaml   # PostgreSQL + optional app image
-├── ai-service/        # FastAPI — CV parse + v2 match/rank
+│   └── compose.yaml   # PostgreSQL + image app optionnelle
+├── ai-service/        # FastAPI — parsing CV + match/rank v2
 └── README.md
 ```
 
-## Prerequisites
+## Prérequis
 
-- **Java 21** + Maven (or `./mvnw` in `core-service`)
+- **Java 21** + Maven (ou `./mvnw` dans `core-service`)
 - **Node.js 18+**
 - **Python 3.10+**
-- **Docker** (for PostgreSQL via Compose)
-- **Groq API key** — [console.groq.com](https://console.groq.com/) (CV parsing and LLM scoring)
+- **Docker** (pour PostgreSQL via Compose)
+- **Clé API Groq** — [console.groq.com](https://console.groq.com/) (parsing CV et scoring LLM)
 
-## Quick start (local development)
+## Démarrage rapide (développement local)
 
-### 1. Database
+### 1. Base de données
 
 ```bash
 cd core-service
 docker compose up -d postgres
 ```
 
-PostgreSQL listens on **`localhost:15432`** (user/password/db: `tunhire` / `tunhire` / `tunhire`).
+PostgreSQL écoute sur **`localhost:15432`** (utilisateur / mot de passe / base : `tunhire` / `tunhire` / `tunhire`).
 
-### 2. AI service
+### 2. Service IA
 
 ```bash
 cd ai-service
 python -m pip install -r requirements.txt
 copy .env.example .env    # Windows
-# Set GROQ_API_KEY in .env
+# Renseigner GROQ_API_KEY dans .env
 
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-Health: http://127.0.0.1:8000/health
+Santé du service : http://127.0.0.1:8000/health
 
-On first run, the SBERT model downloads once (~400 MB).
+Au premier lancement, le modèle SBERT se télécharge une fois (~400 Mo).
 
 ### 3. Core service
 
 ```bash
 cd core-service
-copy .env.example .env    # optional — defaults work with Compose Postgres
+copy .env.example .env    # optionnel — les valeurs par défaut fonctionnent avec Compose
 
 ./mvnw spring-boot:run    # Linux/macOS
-# or: mvnw.cmd spring-boot:run   # Windows
+# ou : mvnw.cmd spring-boot:run   # Windows
 ```
 
-API base: http://localhost:8181
+API : http://localhost:8181
 
 ### 4. Frontend
 
@@ -136,89 +136,89 @@ npm install
 npm run dev
 ```
 
-App: http://localhost:3000
+Application : http://localhost:3000
 
-Set `NEXT_PUBLIC_API_URL=http://localhost:8181` in `.env.local`.
+Définir `NEXT_PUBLIC_API_URL=http://localhost:8181` dans `.env.local`.
 
-### Run order
+### Ordre de démarrage
 
 1. PostgreSQL  
 2. `ai-service` (port 8000)  
 3. `core-service` (port 8181)  
 4. `frontend` (port 3000)
 
-## Environment variables
+## Variables d'environnement
 
 ### `core-service`
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `SPRING_DATASOURCE_URL` | JDBC URL | `jdbc:postgresql://localhost:15432/tunhire` |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` | DB credentials | `tunhire` |
-| `JWT_SECRET` | Signing key (≥ 32 chars) | see `application.properties` |
-| `ai.service.url` | AI service base URL | `http://localhost:8000` |
+| Variable | Description | Valeur par défaut |
+|----------|-------------|-------------------|
+| `SPRING_DATASOURCE_URL` | URL JDBC | `jdbc:postgresql://localhost:15432/tunhire` |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` | Identifiants BDD | `tunhire` |
+| `JWT_SECRET` | Clé de signature (≥ 32 caractères) | voir `application.properties` |
+| `ai.service.url` | URL du service IA | `http://localhost:8000` |
 
 ### `ai-service`
 
 | Variable | Description |
 |----------|-------------|
-| `GROQ_API_KEY` | Required for CV parsing and LLM ranking |
-| `SCORER_MODE` | `hybrid` (default), `embedding`, or `llm` |
-| `SCORER_EMBED_WEIGHT` / `LLM` / `RULES` | Hybrid blend (default 0.4 / 0.4 / 0.2) |
+| `GROQ_API_KEY` | Requis pour le parsing CV et le ranking LLM |
+| `SCORER_MODE` | `hybrid` (défaut), `embedding` ou `llm` |
+| `SCORER_EMBED_WEIGHT` / `LLM` / `RULES` | Pondération hybride (défaut 0,4 / 0,4 / 0,2) |
 
 ### `frontend`
 
 | Variable | Description |
 |----------|-------------|
-| `NEXT_PUBLIC_API_URL` | Core API URL (`http://localhost:8181`) |
+| `NEXT_PUBLIC_API_URL` | URL de l'API core (`http://localhost:8181`) |
 
-## Main API surface
+## API principale
 
-| Area | Examples |
-|------|----------|
+| Domaine | Exemples |
+|---------|----------|
 | Auth | `POST /auth/register`, `POST /auth/login` |
-| Jobs | `GET /jobs` (public), `POST /jobs` (recruiter) |
-| Candidate | `GET /candidates/me`, `POST /candidates/me/cv/parse` |
-| Applications | `POST /applications`, `GET /applications/job/{jobId}/ranked` |
-| Companies | `POST /companies`, invites, team, dashboard |
+| Offres | `GET /jobs` (public), `POST /jobs` (recruteur) |
+| Candidat | `GET /candidates/me`, `POST /candidates/me/cv/parse` |
+| Candidatures | `POST /applications`, `GET /applications/job/{jobId}/ranked` |
+| Entreprises | `POST /companies`, invitations, équipe, tableau de bord |
 | Chat | REST + WebSocket (STOMP) |
-| AI (direct) | `POST /v1/cv/parse`, `POST /v2/match`, `POST /v2/rank` |
+| IA (direct) | `POST /v1/cv/parse`, `POST /v2/match`, `POST /v2/rank` |
 
-## User roles
+## Rôles utilisateurs
 
-| Role | Scope |
-|------|--------|
-| `CANDIDATE` | Profile, applications, chat |
-| `RECRUITER` | Companies, jobs, applicants, ranking |
-| `RECRUITER_ADMIN` | Company admin (team, settings) |
-| `MEMBER` | Company member (jobs & applications) |
+| Rôle | Périmètre |
+|------|-----------|
+| `CANDIDATE` | Profil, candidatures, chat |
+| `RECRUITER` | Entreprises, offres, candidats, classement |
+| `RECRUITER_ADMIN` | Admin entreprise (équipe, paramètres) |
+| `MEMBER` | Membre entreprise (offres et candidatures) |
 
-## Scoring pipeline (summary)
+## Pipeline de scoring (résumé)
 
-1. **CV** — PDF → pdfplumber → Groq → structured profile  
-2. **Match** — composite job/candidate text → SBERT cosine similarity  
-3. **Rules** — experience level, location, profile completeness  
-4. **Groq** — optional LLM evaluation  
-5. **Blend** — `0.4×embed + 0.4×LLM + 0.2×rules` (or `0.7×embed + 0.3×rules` without Groq)  
-6. **Cache** — scores stored per application in PostgreSQL; invalidated when job, profile, or scorer version changes  
+1. **CV** — PDF → pdfplumber → Groq → profil structuré  
+2. **Matching** — textes composites offre/profil → similarité cosinus SBERT  
+3. **Règles** — niveau d'expérience, localisation, complétude du profil  
+4. **Groq** — évaluation LLM optionnelle  
+5. **Blend** — `0,4×embed + 0,4×LLM + 0,2×rules` (ou `0,7×embed + 0,3×rules` sans Groq)  
+6. **Cache** — scores stockés par candidature dans PostgreSQL ; invalidation si offre, profil ou version du scorer change  
 
-## Docker (core + database)
+## Docker (core + base de données)
 
-To run the packaged core service with Postgres:
+Pour lancer le core-service packagé avec Postgres :
 
 ```bash
 cd core-service
 docker compose up -d
 ```
 
-The app image is exposed on **port 8081** (container port 8080). Adjust `NEXT_PUBLIC_API_URL` accordingly if you use this mode instead of local Maven.
+L'image applicative est exposée sur le **port 8081** (port 8080 dans le conteneur). Adapter `NEXT_PUBLIC_API_URL` en conséquence si vous utilisez ce mode plutôt que Maven en local.
 
-## Further reading
+## Documentation complémentaire
 
-- [`frontend/README.md`](frontend/README.md) — routes, frontend architecture, test flows  
-- [`ai-service/README.md`](ai-service/README.md) — AI endpoints and troubleshooting  
-- [`core-service/chat-arch.md`](core-service/chat-arch.md) — backend modules and API notes  
+- [`frontend/README.md`](frontend/README.md) — routes, architecture frontend, scénarios de test  
+- [`ai-service/README.md`](ai-service/README.md) — endpoints IA et dépannage  
+- [`core-service/chat-arch.md`](core-service/chat-arch.md) — modules backend et notes API  
 
-## License
+## Licence
 
-Academic / project repository — see repository owner for usage terms.
+Projet académique — consulter le propriétaire du dépôt pour les conditions d'utilisation.
