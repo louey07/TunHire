@@ -17,6 +17,7 @@ class CVParseResult(BaseModel):
     skills: List[str] = Field(default_factory=list)
     languages: List[str] = Field(default_factory=list)
     education: List[str] = Field(default_factory=list)
+    cv_summary: Optional[str] = None
     raw_text: str = Field(exclude=True)
     parser_version: str = "1.0.0"
     confidence_score: float = 0.0

@@ -66,6 +66,62 @@ h3,
   box-shadow: 0 30px 60px -24px rgba(25, 28, 30, 0.06);
 }
 
+.ambient-shadow {
+  box-shadow: 0 30px 60px -24px rgba(25, 28, 30, 0.06);
+}
+
 .soft-outline {
   border: 1px solid color-mix(in srgb, var(--outline-variant) 18%, transparent);
+}
+
+.surface-card {
+  background: var(--surface-container-low);
+}
+
+.surface-section {
+  background: var(--surface-container-lowest);
+  border-radius: 1.75rem;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 600;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.btn-secondary {
+  background: var(--surface-container-high);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.input-soft {
+  background: var(--surface-container-lowest);
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input-soft:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--secondary) 35%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--secondary) 12%, transparent);
+}
+
+.input-soft-flat {
+  background: var(--surface-container-lowest);
+  border: 1px solid transparent;
+  border-radius: 2px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input-soft-flat:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--secondary) 35%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--secondary) 12%, transparent);
 }

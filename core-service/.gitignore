@@ -34,3 +34,8 @@ build/
 
 ### Environment ###
 .env
+.env.local
+!.env.example
+
+### Uploaded CV files ###
+uploads/

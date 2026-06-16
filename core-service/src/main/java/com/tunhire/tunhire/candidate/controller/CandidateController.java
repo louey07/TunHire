@@ -7,7 +7,11 @@ import com.tunhire.tunhire.candidate.SkillRequest;
 import com.tunhire.tunhire.candidate.UpdateProfileRequest;
 import com.tunhire.tunhire.candidate.CandidateService;
 import com.tunhire.tunhire.common.AiServiceClient;
+import com.tunhire.tunhire.common.AiServiceUnavailableException;
+import com.tunhire.tunhire.common.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -17,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/candidates")
 @RequiredArgsConstructor
+@Slf4j
 public class CandidateController {
 
     private final CandidateService candidateService;
@@ -28,6 +33,13 @@ public class CandidateController {
     public ResponseEntity<CandidateProfileResponse> getMyProfile(Authentication authentication) {
         Long userId = extractUserId(authentication);
         return ResponseEntity.ok(candidateService.getMyProfile(userId));
+    }
+
+    @GetMapping("/me/resume")
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public ResponseEntity<Resource> downloadMyResume(Authentication authentication) {
+        Long userId = extractUserId(authentication);
+        return candidateService.buildResumeDownload(userId);
     }
 
     @PutMapping("/me")
@@ -64,24 +76,57 @@ public class CandidateController {
             Authentication authentication,
             @RequestParam("file") MultipartFile file) {
         Long userId = extractUserId(authentication);
-        AiServiceClient.CvParseResult result = aiServiceClient.parseCv(file);
-        System.out.println("DEBUG parsed location: " + result.location());
-        System.out.println("DEBUG parsed years: " + result.yearsExperience());
-        System.out.println("DEBUG profile update called");
-        if (result != null) {
-            if (result.skills() != null) {
-                candidateService.updateSkillsFromCv(userId, result.skills());
-            }
-            UpdateProfileRequest profileUpdate = new UpdateProfileRequest(
-                null,
-                null,
-                result.location(),
-                null,
-                result.yearsExperience() > 0 ? result.yearsExperience() : null
-            );
-            candidateService.updateProfile(userId, profileUpdate);
+
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("CV file is required.");
         }
-        return ResponseEntity.ok(candidateService.getMyProfile(userId));
+
+        AiServiceClient.CvParseResult result = aiServiceClient.parseCv(file);
+        if (result == null) {
+            throw new AiServiceUnavailableException(
+                "CV parsing service is unavailable. Start the AI service on port 8000."
+            );
+        }
+
+        candidateService.applyCvParseResult(
+            userId,
+            result.skills(),
+            result.location(),
+            result.yearsExperience() > 0 ? result.yearsExperience() : null,
+            result.education(),
+            result.languages(),
+            result.cvSummary()
+        );
+
+        if (result.skills() != null && !result.skills().isEmpty()) {
+            log.info("Imported {} skills from CV for user {}", result.skills().size(), userId);
+        } else {
+            log.warn("CV parsed for user {} but no skills were extracted", userId);
+        }
+
+        UpdateProfileRequest profileUpdate = new UpdateProfileRequest(
+            null,
+            null,
+            null,
+            null,
+            null
+        );
+
+        return ResponseEntity.ok(
+            candidateService.storeUploadedCv(userId, file, profileUpdate)
+        );
+    }
+
+    @GetMapping("/{userId}/resume")
+    @PreAuthorize("hasRole('RECRUITER')")
+    public ResponseEntity<Resource> downloadCandidateResume(
+            Authentication authentication,
+            @PathVariable Long userId) {
+        Long recruiterId = extractUserId(authentication);
+        if (!candidateService.canRecruiterAccessResume(recruiterId, userId)) {
+            throw new ResourceNotFoundException("Resume not found");
+        }
+        return candidateService.buildResumeDownload(userId);
     }
 
     @GetMapping("/{id}")

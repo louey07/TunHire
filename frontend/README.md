@@ -1,71 +1,77 @@
 # TunHire Frontend
 
-Interface web de la plateforme de recrutement TunHire — propulsée par l'IA.
+Interface web de la plateforme de recrutement TunHire.
 
 ## Tech Stack
-- Next.js 16 (App Router)
+
+- Next.js (App Router)
 - TypeScript
 - Tailwind CSS
-- JWT Authentication
+- JWT authentication (localStorage + cookie for middleware)
 
 ## Prérequis
+
 - Node.js 18+
-- Backend Spring Boot running on port 8081
-- AI Service running on port 8000
+- Backend Spring Boot on port `8081`
 
 ## Installation
 
 ```bash
+cd frontend
+cp .env.example .env.local
 npm install
 npm run dev
 ```
 
-## Pages
-- `/` → Redirects to /jobs
-- `/login` → Login and Register with role selection (Candidat / Recruteur)
-- `/jobs` → Public job listings with search and pagination
-- `/jobs/[id]` → Job detail page
-- `/dashboard/candidate` → Candidate dashboard (profile, CV upload, skills)
-- `/dashboard/recruiter` → Recruiter dashboard (company, jobs, ranked applications)
+Set `NEXT_PUBLIC_API_URL` in `.env.local` (defaults to `http://localhost:8081`).
+
+## Scripts
+
+- `npm run dev` — development server
+- `npm run build` — production build
+- `npm run start` — run production build
+
+## Route map
+
+### Public
+
+- `/` → redirects to `/jobs`
+- `/jobs` — job search (list + detail panel)
+- `/jobs/[id]` — job detail
+- `/companies/[slug]` — public company profile + jobs
+- `/login` — login / register
+
+### Candidate
+
+- `/dashboard/candidate` — profile, skills, CV import
+- `/dashboard/candidate/applications` — application tracking
+
+All candidate routes share `CandidateShell` (sidebar, centered `max-w-6xl` content).
+
+### Recruiter
+
+- `/dashboard/recruiter` — overview + AI-ranked pipeline
+- `/dashboard/recruiter/jobs` — job management
+- `/dashboard/recruiter/jobs/new` — create job
+- `/dashboard/recruiter/candidates` — ranked applicants
+- `/dashboard/recruiter/company` — company profile
+- `/dashboard/recruiter/team` — team members
+
+### Other
+
+- `/invites/accept?token=…` — accept company invite
+- Branded `not-found` and `error` pages
 
 ## Architecture
-- `lib/auth.ts` → JWT helpers: getToken(), getUser(), isLoggedIn(), logout()
-- `lib/api.ts` → Base fetch helpers with auto Authorization header
-- `components/Navbar.tsx` → Role-aware navigation (public, candidate, recruiter)
-- `components/JobCard.tsx` → Reusable job card component
-- `components/SkillBadge.tsx` → Teal skill pill with optional delete
-- `proxy.ts` → Route protection for /dashboard/* using cookie
 
-## Backend API
-Base URL: `http://localhost:8081`
+- `lib/api.ts` — `apiGet`, `apiPost`, `apiPatchQuery`, `NEXT_PUBLIC_API_URL`
+- `lib/auth.ts` — `setSession`, `requireRole`, token helpers
+- `lib/types.ts` — shared DTOs
+- `middleware.ts` — protects `/dashboard/*` via cookie
+- `app/(candidate)/layout.tsx` — unified candidate shell (includes `/jobs`)
 
-| Resource | Endpoints |
-|---|---|
-| Auth | `POST /auth/login`, `POST /auth/register` |
-| Candidate | `GET/PUT /candidates/me`, `POST /candidates/me/skills`, `DELETE /candidates/me/skills/{id}`, `POST /candidates/me/cv/parse` |
-| Jobs | `GET /jobs`, `GET /jobs/{id}`, `POST /jobs`, `PATCH /jobs/{id}/status` |
-| Companies | `POST /companies`, `GET /companies/{id}/jobs` |
-| Applications | `POST /applications`, `GET /applications/job/{jobId}/ranked`, `PATCH /applications/{id}/status` |
+## Manual test flows
 
-## Credentials de test
-| Role | Email | Password |
-|---|---|---|
-| Candidate | [your test email] | [password] |
-| Recruiter | [your test email] | [password] |
-
-## Modifications Backend pour l'intégration Frontend
-
-Les modifications suivantes ont été apportées au core-service
-pour permettre la communication avec le frontend Next.js :
-
-### 1. Configuration CORS (SecurityConfig.java)
-Ajout d'une configuration CORS pour autoriser les requêtes
-depuis http://localhost:3000 :
-- Méthodes autorisées : GET, POST, PUT, DELETE, PATCH, OPTIONS
-- Headers autorisés : tous
-- Credentials : activés
-
-### 2. Fix preflight OPTIONS (JwtAuthenticationFilter.java)
-Le filtre JWT interceptait les requêtes OPTIONS (preflight)
-et les bloquait avec 403.
-Fix : les requêtes OPTIONS sont laissées passer sans vérification du token.
+1. Register as candidate → browse `/jobs` → apply → see application in `/dashboard/candidate/applications`
+2. Register as recruiter → create company → publish job → view ranked candidates
+3. Verify candidate cannot access `/dashboard/recruiter` (redirected by `requireRole`)

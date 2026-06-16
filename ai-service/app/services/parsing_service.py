@@ -1,12 +1,17 @@
 import json
+import logging
 import os
 import re
-from typing import Any, Dict
+from pathlib import Path
+from typing import Any, Dict, List
 
 from dotenv import load_dotenv
-load_dotenv()
+
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 from groq import Groq
+
+logger = logging.getLogger(__name__)
 
 _GROQ_MODEL = "llama-3.3-70b-versatile"
 
@@ -36,6 +41,9 @@ _PROMPT = (
     "section in the CV. Extract only the language names without "
     "the level. Example: ['Arabe', 'Anglais', 'Français', 'Italien']. "
     "If no language section found, return empty list.\n"
+    "- cv_summary: string — a concise professional summary in French "
+    "(2-4 sentences, max 500 characters) describing the candidate's "
+    "profile, experience, and strengths.\n"
     "No markdown, no code blocks, just the raw JSON."
 )
 
@@ -44,6 +52,16 @@ _COMMON_LANGUAGES = [
     "Italien", "Japonais", "Chinois", "Russe", "Portugais",
     "Turc", "Néerlandais", "Polonais", "Arabic", "English",
     "French", "German", "Spanish", "Italian", "Japanese",
+]
+
+_KNOWN_TECHNOLOGIES = [
+    "Java", "Python", "JavaScript", "TypeScript", "React", "Angular", "Vue",
+    "Node.js", "Spring Boot", "Spring", "Docker", "Kubernetes", "PostgreSQL",
+    "MySQL", "MongoDB", "Redis", "AWS", "Azure", "Git", "CI/CD", "HTML", "CSS",
+    "Tailwind", "Next.js", "FastAPI", "Django", "Flask", "C#", ".NET", "Go",
+    "Rust", "Kotlin", "Swift", "Flutter", "Android", "iOS", "Linux", "Agile",
+    "Scrum", "Jenkins", "Terraform", "GraphQL", "REST", "Microservices",
+    "Hibernate", "Maven", "Gradle", "JUnit", "Kafka", "RabbitMQ", "Elasticsearch",
 ]
 
 _EMPTY: Dict[str, Any] = {
@@ -55,17 +73,70 @@ _EMPTY: Dict[str, Any] = {
     "skills": [],
     "languages": [],
     "education": [],
+    "cv_summary": "",
     "confidence_score": 0.0,
 }
 
 
+def _extract_skills_fallback(text: str) -> List[str]:
+    """Heuristic skill extraction when Groq is unavailable or returns nothing."""
+    skills: List[str] = []
+    seen: set[str] = set()
+
+    def add(skill: str) -> None:
+        cleaned = skill.strip().strip("-•·").strip()
+        if not cleaned or len(cleaned) > 50 or len(cleaned.split()) > 5:
+            return
+        key = cleaned.lower()
+        if key in seen:
+            return
+        seen.add(key)
+        skills.append(cleaned)
+
+    section = re.search(
+        r"(?is)(compétences|competences|skills|technical skills|technologies|"
+        r"tech stack|outils)\s*[:\-]?\s*(.+?)(?:\n\s*\n|\n(?:expérience|experience|"
+        r"éducation|education|langues|languages|projets|projects)\b|$)",
+        text,
+    )
+    if section:
+        for part in re.split(r"[,;|•/\n]", section.group(2)):
+            add(part)
+
+    inline = re.search(r"(?is)\bskills?\s*[:\-]\s*([^\n]+)", text)
+    if inline:
+        for part in re.split(r"[,;|•]", inline.group(1)):
+            add(part)
+
+    text_lower = text.lower()
+    for tech in _KNOWN_TECHNOLOGIES:
+        if tech.lower() in text_lower:
+            add(tech)
+
+    return skills[:30]
+
+
+def _apply_fallback_skills(result: Dict[str, Any], text: str) -> Dict[str, Any]:
+    if result.get("skills"):
+        return result
+    fallback = _extract_skills_fallback(text)
+    if fallback:
+        result["skills"] = fallback
+        result["confidence_score"] = max(float(result.get("confidence_score") or 0), 0.4)
+        logger.info("Applied fallback skill extraction (%d skills)", len(fallback))
+    return result
+
+
 def parse_cv_text(text: str) -> Dict[str, Any]:
     if not text or not text.strip():
+        logger.warning("CV parse skipped: extracted text is empty")
         return dict(_EMPTY)
 
     api_key = os.getenv("GROQ_API_KEY", "")
     if not api_key:
-        return dict(_EMPTY)
+        logger.warning("GROQ_API_KEY not set; using fallback skill extraction only")
+        result = dict(_EMPTY)
+        return _apply_fallback_skills(result, text)
 
     try:
         client = Groq(api_key=api_key)
@@ -83,17 +154,13 @@ def parse_cv_text(text: str) -> Dict[str, Any]:
         raw = re.sub(r"^```(?:json)?\s*", "", raw)
         raw = re.sub(r"\s*```$", "", raw)
         data = json.loads(raw)
-        raw_text = text
 
         languages_found = list(data.get("languages") or [])
         if not languages_found:
             languages_found = [
                 lang for lang in _COMMON_LANGUAGES
-                if re.search(rf"\b{lang}\b", raw_text, re.IGNORECASE)
+                if re.search(rf"\b{lang}\b", text, re.IGNORECASE)
             ]
-
-        print(f"DEBUG languages detected: {languages_found}")
-        print(f"DEBUG raw_text contains Arabe: {'Arabe' in raw_text}")
 
         result = {
             "full_name": str(data.get("full_name") or ""),
@@ -104,12 +171,12 @@ def parse_cv_text(text: str) -> Dict[str, Any]:
             "skills": list(data.get("skills") or []),
             "languages": languages_found,
             "education": list(data.get("education") or []),
+            "cv_summary": str(data.get("cv_summary") or "")[:500],
             "confidence_score": 0.95,
         }
 
-        if not result.get("languages"):
-            result["languages"] = languages_found
-
-        return result
+        return _apply_fallback_skills(result, text)
     except Exception:
-        return dict(_EMPTY)
+        logger.exception("Groq CV parsing failed")
+        result = dict(_EMPTY)
+        return _apply_fallback_skills(result, text)
