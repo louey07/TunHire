@@ -1,16 +1,20 @@
 package com.tunhire.tunhire.companies.service;
 
+import com.tunhire.tunhire.auth.entity.User;
+import com.tunhire.tunhire.auth.repository.UserRepository;
 import com.tunhire.tunhire.common.ResourceNotFoundException;
 import com.tunhire.tunhire.companies.AcceptInviteRequest;
+import com.tunhire.tunhire.companies.CompanyMembershipSummary;
 import com.tunhire.tunhire.companies.InviteTokenResponse;
 import com.tunhire.tunhire.companies.MembershipRequest;
 import com.tunhire.tunhire.companies.MembershipResponse;
+import com.tunhire.tunhire.companies.entity.Company;
 import com.tunhire.tunhire.companies.entity.CompanyInvitation;
 import com.tunhire.tunhire.companies.entity.CompanyMembership;
 import com.tunhire.tunhire.companies.MemberRole;
 import com.tunhire.tunhire.companies.repository.CompanyInvitationRepository;
 import com.tunhire.tunhire.companies.repository.CompanyMembershipRepository;
-import org.springframework.modulith.events.ApplicationModuleListener;
+import com.tunhire.tunhire.companies.repository.CompanyRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
@@ -18,7 +22,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import com.tunhire.tunhire.common.CompanyCreatedEvent;
 
 @Service
 @Transactional
@@ -26,22 +29,52 @@ public class MembershipServiceImpl implements MembershipService {
 
     private final CompanyMembershipRepository membershipRepository;
     private final CompanyInvitationRepository invitationRepository;
+    private final CompanyRepository companyRepository;
+    private final UserRepository userRepository;
 
     public MembershipServiceImpl(
             CompanyMembershipRepository membershipRepository,
-            CompanyInvitationRepository invitationRepository) {
+            CompanyInvitationRepository invitationRepository,
+            CompanyRepository companyRepository,
+            UserRepository userRepository) {
         this.membershipRepository = membershipRepository;
         this.invitationRepository = invitationRepository;
+        this.companyRepository = companyRepository;
+        this.userRepository = userRepository;
     }
 
-    @ApplicationModuleListener
-    void onCompanyCreated(CompanyCreatedEvent event) {
+    @Override
+    public MembershipResponse addCreatorAsAdmin(Long companyId, Long userId) {
+        if (isMember(companyId, userId)) {
+            return membershipRepository.findByCompanyIdAndUserId(companyId, userId)
+                .map(this::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found"));
+        }
         CompanyMembership newMember = CompanyMembership.builder()
-            .companyId(event.companyId())
-            .userId(event.creatorUserId())
+            .companyId(companyId)
+            .userId(userId)
             .role(MemberRole.RECRUITER_ADMIN)
             .build();
-        membershipRepository.save(newMember);
+        return toResponse(membershipRepository.save(newMember));
+    }
+
+    @Override
+    public List<CompanyMembershipSummary> getCompaniesForUser(Long userId) {
+        return membershipRepository.findByUserId(userId).stream()
+            .map(membership -> {
+                Company company = companyRepository.findById(membership.getCompanyId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
+                return new CompanyMembershipSummary(
+                    company.getId(),
+                    company.getName(),
+                    company.getSlug(),
+                    company.getLogoUrl(),
+                    company.getLocation(),
+                    membership.getRole(),
+                    membership.getJoinedAt()
+                );
+            })
+            .collect(Collectors.toList());
     }
 
     @Override
@@ -141,7 +174,9 @@ public class MembershipServiceImpl implements MembershipService {
         }
 
         if (isMember(invite.getCompanyId(), currentUserId)) {
-            throw new IllegalArgumentException("You are already a member of this company.");
+            return membershipRepository.findByCompanyIdAndUserId(invite.getCompanyId(), currentUserId)
+                .map(this::toResponse)
+                .orElseThrow(() -> new IllegalArgumentException("You are already a member of this company."));
         }
 
         invite.setUsed(true);
@@ -157,10 +192,14 @@ public class MembershipServiceImpl implements MembershipService {
     }
 
     private MembershipResponse toResponse(CompanyMembership membership) {
+        User user = userRepository.findById(membership.getUserId()).orElse(null);
         return new MembershipResponse(
             membership.getId(),
             membership.getCompanyId(),
             membership.getUserId(),
+            user != null ? user.getFirstName() : "",
+            user != null ? user.getLastName() : "",
+            user != null ? user.getEmail() : "",
             membership.getRole(),
             membership.getJoinedAt()
         );

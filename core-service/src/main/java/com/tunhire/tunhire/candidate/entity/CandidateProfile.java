@@ -34,10 +34,28 @@ public class CandidateProfile {
 
     private String resumeUrl;
 
+    private String resumeStorageKey;
+
+    private String resumeFileName;
+
+    private String resumeContentType;
+
     private String location;
 
     private LocalDate availableFrom;
 
     private Integer yearsOfExperience;
+
+    @Column(name = "cv_summary", columnDefinition = "TEXT")
+    private String cvSummary;
+
+    @Column(name = "education_json", columnDefinition = "TEXT")
+    private String educationJson;
+
+    @Column(name = "languages_json", columnDefinition = "TEXT")
+    private String languagesJson;
+
+    @Column(name = "profile_version_hash", length = 64)
+    private String profileVersionHash;
 }
 

@@ -1,21 +1,24 @@
 package com.tunhire.tunhire.applications;
+
 import com.tunhire.tunhire.applications.entity.Application;
+import com.tunhire.tunhire.applications.entity.ApplicationMatchScore;
 import com.tunhire.tunhire.applications.entity.ApplicationStatus;
 import com.tunhire.tunhire.applications.repository.ApplicationRepository;
 import com.tunhire.tunhire.candidate.CandidateProfileProvider;
-import com.tunhire.tunhire.candidate.repository.CandidateProfileRepository;
-import com.tunhire.tunhire.candidate.repository.CandidateSkillRepository;
-import com.tunhire.tunhire.common.AiServiceClient;
-import com.tunhire.tunhire.common.CandidateSkillsDto;
 import com.tunhire.tunhire.common.CandidateSummaryDto;
+import com.tunhire.tunhire.common.MatchScoreHashUtil;
 import com.tunhire.tunhire.common.ResourceNotFoundException;
+import com.tunhire.tunhire.companies.DashboardApplicationItem;
+import com.tunhire.tunhire.job_offers.entity.Job;
 import com.tunhire.tunhire.job_offers.repository.JobRepository;
+import com.tunhire.tunhire.notifications.CandidateApplicationViewService;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,26 +31,23 @@ public class ApplicationService {
     private final JobLookupService jobLookupService;
     private final CandidateProfileProvider candidateProfileProvider;
     private final JobRepository jobRepository;
-    private final CandidateProfileRepository candidateProfileRepository;
-    private final CandidateSkillRepository candidateSkillRepository;
-    private final AiServiceClient aiServiceClient;
+    private final ApplicationMatchScoreService matchScoreService;
+    private final CandidateApplicationViewService candidateApplicationViewService;
 
     public ApplicationService(
         ApplicationRepository applicationRepository,
         JobLookupService jobLookupService,
         CandidateProfileProvider candidateProfileProvider,
         JobRepository jobRepository,
-        CandidateProfileRepository candidateProfileRepository,
-        CandidateSkillRepository candidateSkillRepository,
-        AiServiceClient aiServiceClient
+        ApplicationMatchScoreService matchScoreService,
+        CandidateApplicationViewService candidateApplicationViewService
     ) {
         this.applicationRepository = applicationRepository;
         this.jobLookupService = jobLookupService;
         this.candidateProfileProvider = candidateProfileProvider;
         this.jobRepository = jobRepository;
-        this.candidateProfileRepository = candidateProfileRepository;
-        this.candidateSkillRepository = candidateSkillRepository;
-        this.aiServiceClient = aiServiceClient;
+        this.matchScoreService = matchScoreService;
+        this.candidateApplicationViewService = candidateApplicationViewService;
     }
 
     public ApplicationResponse create(
@@ -58,7 +58,13 @@ public class ApplicationService {
         application.setJobId(request.jobId());
         application.setUserId(userId);
         application.setStatus(ApplicationStatus.SUBMITTED);
-        return toResponse(applicationRepository.save(application));
+        Application saved = applicationRepository.save(application);
+        candidateApplicationViewService.seedViewForNewApplication(
+            userId,
+            saved.getId(),
+            saved.getStatus()
+        );
+        return toResponse(saved);
     }
 
     public ApplicationResponse getById(Long id) {
@@ -86,6 +92,19 @@ public class ApplicationService {
         return toSummaryList(applicationRepository.findByJobIdIn(jobIds));
     }
 
+    public List<DashboardApplicationItem> getDashboardApplicationsForCompany(
+        Long companyId,
+        Map<Long, String> jobTitlesById
+    ) {
+        List<Long> jobIds = jobLookupService.getJobIdsByCompanyId(companyId);
+        if (jobIds == null || jobIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return applicationRepository.findByJobIdIn(jobIds).stream()
+            .map(app -> toDashboardItem(app, jobTitlesById))
+            .collect(Collectors.toList());
+    }
+
     public ApplicationResponse updateStatus(Long applicationId, ApplicationStatus status, Long recruiterId) {
         Application application = applicationRepository
             .findById(applicationId)
@@ -96,70 +115,71 @@ public class ApplicationService {
         }
 
         application.setStatus(status);
+        application.setStatusUpdatedAt(Instant.now());
         return toResponse(applicationRepository.save(application));
+    }
+
+    public void deleteForCandidate(Long applicationId, Long userId) {
+        Application application = applicationRepository
+            .findById(applicationId)
+            .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
+
+        if (!application.getUserId().equals(userId)) {
+            throw new IllegalArgumentException(
+                "You can only delete your own applications"
+            );
+        }
+
+        applicationRepository.delete(application);
     }
 
     public List<RankedApplicationResponse> getRankedByJobId(Long jobId) {
         List<Application> applications = applicationRepository.findByJobId(jobId);
 
-        String jobDescription = jobRepository.findById(jobId)
-            .orElseThrow(() -> new ResourceNotFoundException("Job not found"))
-            .getDescription();
+        Job job = jobRepository.findById(jobId)
+            .orElseThrow(() -> new ResourceNotFoundException("Job not found"));
 
-        List<CandidateSkillsDto> candidateDtos = applications.stream()
-            .map(app -> {
-                List<String> skills = candidateProfileRepository.findByUserId(app.getUserId())
-                    .map(profile -> candidateSkillRepository.findByProfileId(profile.getId())
-                        .stream()
-                        .map(skill -> skill.getSkillName())
-                        .toList())
-                    .orElse(List.of());
-                return new CandidateSkillsDto(app.getUserId(), skills);
-            })
-            .toList();
+        Map<Long, ApplicationMatchScore> scoresByApplicationId =
+            matchScoreService.resolveScoresForJob(job, applications);
 
-        List<AiServiceClient.CandidateRank> rankings =
-            aiServiceClient.rankCandidates(jobDescription, candidateDtos);
-
-        if (rankings == null) {
-            return applications.stream()
-                .map(app -> new RankedApplicationResponse(
-                    app.getId(), app.getJobId(), app.getUserId(),
-                    app.getStatus(), app.getCreatedAt(),
-                    null, null, null
-                ))
-                .toList();
+        List<RankedApplicationResponse> result = new ArrayList<>();
+        for (Application application : applications) {
+            ApplicationMatchScore score = scoresByApplicationId.get(application.getId());
+            if (score != null) {
+                result.add(new RankedApplicationResponse(
+                    application.getId(),
+                    application.getJobId(),
+                    application.getUserId(),
+                    application.getStatus(),
+                    application.getCreatedAt(),
+                    score.getScore(),
+                    score.getLevel(),
+                    MatchScoreHashUtil.fromJson(score.getMatchedSkillsJson()),
+                    MatchScoreHashUtil.fromJson(score.getGapsJson()),
+                    score.getSummary()
+                ));
+            } else {
+                result.add(new RankedApplicationResponse(
+                    application.getId(),
+                    application.getJobId(),
+                    application.getUserId(),
+                    application.getStatus(),
+                    application.getCreatedAt(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ));
+            }
         }
 
-        Map<Long, Application> appByUserId = applications.stream()
-            .collect(Collectors.toMap(Application::getUserId, a -> a));
-
-        Set<Long> rankedUserIds = rankings.stream()
-            .map(AiServiceClient.CandidateRank::candidateId)
-            .collect(Collectors.toSet());
-
-        List<RankedApplicationResponse> result = new ArrayList<>(
-            rankings.stream()
-                .filter(rank -> appByUserId.containsKey(rank.candidateId()))
-                .map(rank -> {
-                    Application app = appByUserId.get(rank.candidateId());
-                    return new RankedApplicationResponse(
-                        app.getId(), app.getJobId(), app.getUserId(),
-                        app.getStatus(), app.getCreatedAt(),
-                        rank.score(), rank.level(), rank.matchedSkills()
-                    );
-                })
-                .toList()
+        result.sort(
+            Comparator.comparing(
+                RankedApplicationResponse::score,
+                Comparator.nullsLast(Comparator.reverseOrder())
+            )
         );
-
-        applications.stream()
-            .filter(app -> !rankedUserIds.contains(app.getUserId()))
-            .map(app -> new RankedApplicationResponse(
-                app.getId(), app.getJobId(), app.getUserId(),
-                app.getStatus(), app.getCreatedAt(),
-                null, null, null
-            ))
-            .forEach(result::add);
 
         return result;
     }
@@ -176,6 +196,30 @@ public class ApplicationService {
             summary != null ? summary.firstName() : "Unknown",
             summary != null ? summary.lastName() : "Unknown",
             summary != null ? summary.resumeUrl() : null,
+            application.getStatus(),
+            application.getCreatedAt()
+        );
+    }
+
+    private DashboardApplicationItem toDashboardItem(
+        Application application,
+        Map<Long, String> jobTitlesById
+    ) {
+        CandidateSummaryDto summary =
+            candidateProfileProvider.getCandidateSummary(
+                application.getUserId()
+            );
+        String jobTitle = jobTitlesById.getOrDefault(
+            application.getJobId(),
+            "Offre"
+        );
+        return new DashboardApplicationItem(
+            application.getId(),
+            application.getJobId(),
+            jobTitle,
+            application.getUserId(),
+            summary != null ? summary.firstName() : "Unknown",
+            summary != null ? summary.lastName() : "Unknown",
             application.getStatus(),
             application.getCreatedAt()
         );

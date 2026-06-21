@@ -12,5 +12,7 @@ public record RankedApplicationResponse(
         Instant createdAt,
         Integer score,
         String level,
-        List<String> matchedSkills
+        List<String> matchedSkills,
+        List<String> gaps,
+        String summary
 ) {}

@@ -2,6 +2,8 @@ package com.tunhire.tunhire.applications.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
@@ -48,5 +50,21 @@ public class Application {
 	@CreatedDate
 	@Column(nullable = false, updatable = false)
 	private Instant createdAt;
+
+	@Column(name = "status_updated_at", nullable = false)
+	private Instant statusUpdatedAt;
+
+	@PrePersist
+	protected void onPersist() {
+		Instant now = Instant.now();
+		if (statusUpdatedAt == null) {
+			statusUpdatedAt = now;
+		}
+	}
+
+	@PreUpdate
+	protected void onUpdate() {
+		statusUpdatedAt = Instant.now();
+	}
 }
 

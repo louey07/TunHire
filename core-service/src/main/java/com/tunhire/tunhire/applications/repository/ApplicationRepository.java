@@ -1,6 +1,7 @@
 package com.tunhire.tunhire.applications.repository;
 
 import com.tunhire.tunhire.applications.entity.Application;
+import java.time.Instant;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -10,5 +11,7 @@ public interface ApplicationRepository
     List<Application> findByJobId(Long jobId);
     List<Application> findByUserId(Long userId);
     List<Application> findByJobIdIn(List<Long> jobIds);
+
+    long countByJobIdInAndCreatedAtAfter(List<Long> jobIds, Instant after);
 }
 

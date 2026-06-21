@@ -6,7 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 type Role = 'CANDIDATE' | 'RECRUITER'
 type View = 'login' | 'register'
 
-const API = 'http://localhost:8081'
+import { setSession } from '@/lib/auth'
+import { BASE_URL } from '@/lib/api'
 
 function LoginContent() {
   const router = useRouter()
@@ -84,7 +85,7 @@ function LoginContent() {
           ? { email, password }
           : { email, password, firstName, lastName, phone: '', role }
 
-      const res = await fetch(`${API}${endpoint}`, {
+      const res = await fetch(`${BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -102,25 +103,14 @@ function LoginContent() {
         ) {
           showMsg('error', 'Cet email est déjà utilisé. Essayez de vous connecter.')
         } else {
-          showMsg('error', 'Erreur de connexion. Vérifiez que le serveur est démarré.')
+          showMsg('error', data.message || 'Erreur lors de l\'inscription. Vérifiez vos champs.')
         }
         return
       }
 
       const { token, user } = data.data
 
-      if (view === 'login' && user.role !== role) {
-        if (role === 'CANDIDATE') {
-          showMsg('error', 'Ce compte est un compte Recruteur. Veuillez sélectionner la carte Recruteur.')
-        } else {
-          showMsg('error', 'Ce compte est un compte Candidat. Veuillez sélectionner la carte Candidat.')
-        }
-        return
-      }
-
-      localStorage.setItem('tunhire_token', token)
-      localStorage.setItem('tunhire_user', JSON.stringify(user))
-      document.cookie = `tunhire_token=${token}; path=/; max-age=86400; SameSite=Lax`
+      setSession(token, user)
 
       if (view === 'register') {
         const successText =
@@ -136,7 +126,7 @@ function LoginContent() {
 
       router.push(user.role === 'RECRUITER' ? '/dashboard/recruiter' : '/dashboard/candidate')
     } catch {
-      showMsg('error', 'Serveur indisponible. Vérifiez que le backend est démarré.')
+      showMsg('error', 'Serveur indisponible')
     } finally {
       setLoading(false)
     }
@@ -169,25 +159,9 @@ function LoginContent() {
               Rejoignez un écosystème éditorial où chaque profil est évalué avec précision, éthique et ambition.
             </p>
             <div className="mt-10 flex items-center gap-6">
-              <div className="flex -space-x-3">
-                <img
-                  alt="Talent tech"
-                  className="h-10 w-10 rounded-full border-2 border-[var(--primary)] object-cover"
-                  src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80"
-                />
-                <img
-                  alt="Recruteuse"
-                  className="h-10 w-10 rounded-full border-2 border-[var(--primary)] object-cover"
-                  src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80"
-                />
-                <img
-                  alt="Equipe IA"
-                  className="h-10 w-10 rounded-full border-2 border-[var(--primary)] object-cover"
-                  src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=200&q=80"
-                />
-              </div>
+              
               <p className="text-sm font-medium text-white/70">
-                5 000+ talents et recruteurs premium.
+                talents et recruteurs 
               </p>
             </div>
           </div>
@@ -199,13 +173,10 @@ function LoginContent() {
             <div className="flex flex-wrap items-center justify-between gap-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--primary)] text-white">
-                  TH
+                  T
                 </div>
                 <div>
                   <p className="text-lg font-black text-[var(--primary)]">TunHire</p>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--on-surface-variant)]">
-                    Cognitive architect
-                  </p>
                 </div>
               </div>
               <span className="label-uppercase text-[10px] font-bold text-[var(--secondary)]">
@@ -224,35 +195,45 @@ function LoginContent() {
               </h1>
               <p className="mt-3 text-sm text-[var(--on-surface-variant)]">
                 {view === 'login'
-                  ? 'Accedez a votre tableau de bord, suivez vos opportunites et vos scores IA.'
+                  ? 'Accedez a votre tableau de bord, suivez vos opportunites .'
                   : 'Un espace editorial pour valoriser votre parcours et activer les bons signaux IA.'}
               </p>
 
-              <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {(['CANDIDATE', 'RECRUITER'] as Role[]).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setRole(r)}
-                    className={[
-                      'group relative overflow-hidden rounded-2xl p-4 text-left transition-all',
-                      role === r
-                        ? 'bg-[var(--primary)] text-white'
-                        : 'bg-[var(--surface-container-low)] text-[var(--primary)]',
-                      'soft-outline hover:-translate-y-0.5',
-                    ].join(' ')}
-                  >
-                    <div className="absolute -right-8 -top-8 h-16 w-16 rounded-full bg-[color:var(--secondary-bright)] opacity-20 blur-2xl" />
-                    <span className="text-2xl">{r === 'CANDIDATE' ? '👤' : '🏢'}</span>
-                    <p className="mt-3 text-sm font-semibold">
-                      {r === 'CANDIDATE' ? 'Candidat' : 'Recruteur'}
-                    </p>
-                    <p className={role === r ? 'text-xs text-white/70' : 'text-xs text-[var(--on-surface-variant)]'}>
-                      {r === 'CANDIDATE' ? 'Je cherche un emploi' : 'Je recrute des talents'}
-                    </p>
-                  </button>
-                ))}
-              </div>
+              {view === 'register' ? (
+                <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {(['CANDIDATE', 'RECRUITER'] as Role[]).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setRole(r)}
+                      className={[
+                        'group relative overflow-hidden rounded-2xl p-4 text-left transition-all',
+                        role === r
+                          ? 'bg-[var(--primary)] text-white'
+                          : 'bg-[var(--surface-container-low)] text-[var(--primary)]',
+                        'soft-outline hover:-translate-y-0.5',
+                      ].join(' ')}
+                    >
+                      <div className="absolute -right-8 -top-8 h-16 w-16 rounded-full bg-[color:var(--secondary-bright)] opacity-20 blur-2xl" />
+                      <span className="text-2xl">{r === 'CANDIDATE' ? '👤' : '🏢'}</span>
+                      <p className="mt-3 text-sm font-semibold">
+                        {r === 'CANDIDATE' ? 'Candidat' : 'Recruteur'}
+                      </p>
+                      <p
+                        className={
+                          role === r
+                            ? 'text-xs text-white/70'
+                            : 'text-xs text-[var(--on-surface-variant)]'
+                        }
+                      >
+                        {r === 'CANDIDATE'
+                          ? 'Je cherche un emploi'
+                          : 'Je recrute des talents'}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
 
               <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-5">
                 {view === 'register' && (

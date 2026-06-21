@@ -1,61 +1,85 @@
-import Link from 'next/link'
+import Link from "next/link";
+import { workModeLabel } from "@/lib/recruiter/jobs";
+import type { Job } from "@/lib/types";
 
-interface Job {
-  id: number | string
-  title: string
-  location: string
-  contractType: string
-  description: string
-}
+type JobCardProps = {
+  job: Job;
+  selected?: boolean;
+  onSelect?: () => void;
+  onApply?: () => void;
+  isApplying?: boolean;
+  alreadyApplied?: boolean;
+};
 
-interface JobCardProps {
-  job: Job
-  onApply?: () => void
-  isApplying?: boolean
-}
+export default function JobCard({
+  job,
+  selected,
+  onSelect,
+  onApply,
+  isApplying,
+  alreadyApplied,
+}: JobCardProps) {
+  const Wrapper = onSelect ? "button" : "div";
 
-export default function JobCard({ job, onApply, isApplying }: JobCardProps) {
   return (
-    <div
-      className="bg-white rounded-xl border p-5 hover:shadow-md transition-shadow"
-      style={{ borderColor: '#e2ddd2' }}
+    <Wrapper
+      type={onSelect ? "button" : undefined}
+      onClick={onSelect}
+      className={`surface-card w-full rounded-3xl p-5 text-left transition ${
+        selected
+          ? "bg-[var(--surface-container-lowest)] editorial-shadow ring-2 ring-[color-mix(in_srgb,var(--secondary)_35%,transparent)]"
+          : "hover:bg-[var(--surface-container-lowest)]"
+      }`}
     >
-      <div className="flex items-start justify-between gap-3 mb-2">
-        <h3 className="font-semibold text-[#15191f] text-base">{job.title}</h3>
-        <span
-          className="text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap flex-shrink-0"
-          style={{ background: '#efeae0', color: '#15191f' }}
-        >
-          {job.contractType}
-        </span>
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="font-headline text-base font-semibold text-[var(--primary)]">
+          {job.title}
+        </h3>
+        <div className="flex flex-wrap justify-end gap-2">
+          {job.workMode ? (
+            <span className="rounded-full bg-[var(--surface-container-high)] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--on-surface-variant)]">
+              {workModeLabel(job.workMode)}
+            </span>
+          ) : null}
+          <span className="rounded-full bg-[var(--surface-container-high)] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--on-surface-variant)]">
+            {job.contractType}
+          </span>
+        </div>
       </div>
-
-      <p className="text-sm text-[#888] mb-2">📍 {job.location}</p>
-      <p className="text-sm text-[#555] mb-4">
-        {job.description.slice(0, 100)}
-        {job.description.length > 100 ? '…' : ''}
+      <p className="mt-2 text-sm text-[var(--on-surface-variant)]">
+        {job.companyName ? `${job.companyName} · ` : ""}
+        {job.location}
       </p>
-
-      <div className="flex items-center gap-3">
+      <p className="mt-3 text-sm leading-6 text-[var(--on-surface-variant)]">
+        {job.description.slice(0, 120)}
+        {job.description.length > 120 ? "…" : ""}
+      </p>
+      <div className="mt-4 flex items-center gap-3">
         <Link
           href={`/jobs/${job.id}`}
-          className="text-sm font-medium hover:underline"
-          style={{ color: '#1FA39F' }}
+          className="text-sm font-semibold text-[var(--secondary)] hover:underline"
+          onClick={(e) => e.stopPropagation()}
         >
-          Voir l'offre
+          Voir l&apos;offre
         </Link>
-        {onApply && (
+        {onApply ? (
           <button
             type="button"
-            onClick={onApply}
-            disabled={isApplying}
-            className="ml-auto text-sm px-4 py-2 rounded-lg text-white disabled:opacity-60 transition-colors"
-            style={{ background: '#15191f' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onApply();
+            }}
+            disabled={isApplying || alreadyApplied}
+            className="btn-primary ml-auto rounded-2xl px-4 py-2 text-sm disabled:opacity-60"
           >
-            {isApplying ? 'Postulation...' : 'Postuler'}
+            {alreadyApplied
+              ? "Candidature envoyée"
+              : isApplying
+                ? "Envoi…"
+                : "Postuler"}
           </button>
-        )}
+        ) : null}
       </div>
-    </div>
-  )
+    </Wrapper>
+  );
 }

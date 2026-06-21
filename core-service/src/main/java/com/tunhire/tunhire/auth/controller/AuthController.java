@@ -3,6 +3,7 @@ package com.tunhire.tunhire.auth.controller;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.tunhire.tunhire.auth.AuthResponse;
 import com.tunhire.tunhire.auth.LoginRequest;
 import com.tunhire.tunhire.auth.RegisterRequest;
+import com.tunhire.tunhire.auth.UpdateUserRequest;
 import com.tunhire.tunhire.auth.UserDto;
 import com.tunhire.tunhire.auth.AuthService;
 import com.tunhire.tunhire.common.ApiResponse;
@@ -58,6 +60,19 @@ public class AuthController {
         // authentication.getName() returns the email we put in the JWT subject
         UserDto user = authService.getCurrentUser(authentication.getName());
         return ApiResponse.ok("User fetched", user);
+    }
+
+    /**
+     * PUT /auth/me
+     * Update the currently logged in user's account (name)
+     * Requires: Authorization: Bearer <token>
+     */
+    @PutMapping("/me")
+    public ApiResponse<UserDto> updateMe(
+            Authentication authentication,
+            @Valid @RequestBody UpdateUserRequest request) {
+        UserDto user = authService.updateCurrentUser(authentication.getName(), request);
+        return ApiResponse.ok("User updated successfully", user);
     }
 }
 

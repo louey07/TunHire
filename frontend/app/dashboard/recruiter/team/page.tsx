@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
-import RecruiterSidebar from "@/components/RecruiterSidebar";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
-import { getToken, getUser } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
+import {
+  RecruiterSetupNotice,
+  useRequireActiveCompany,
+} from "@/lib/hooks/useRequireActiveCompany";
+import type { MembershipResponse } from "@/lib/types";
 
 type CompanyResponse = {
   id: number;
@@ -21,22 +23,14 @@ type CompanyApiResponse = {
   data?: CompanyResponse;
 };
 
+type MemberRole = MembershipResponse["role"];
+
 type StoredUser = {
   id: number;
   email: string;
   firstName: string;
   lastName: string;
   role: "CANDIDATE" | "RECRUITER";
-};
-
-type MemberRole = "RECRUITER_ADMIN" | "MEMBER";
-
-type Membership = {
-  id: number;
-  companyId: number;
-  userId: number;
-  role: MemberRole;
-  joinedAt: string;
 };
 
 type InviteTokenResponse = {
@@ -95,16 +89,20 @@ function buildInviteLink(token: string) {
   return `${window.location.origin}/invites/accept?token=${token}`;
 }
 
-export default function RecruiterTeamPage() {
-  const router = useRouter();
-  const currentUser = getUser() as StoredUser | null;
+function getMemberDisplayName(member: MembershipResponse): string {
+  const name = `${member.firstName ?? ""} ${member.lastName ?? ""}`.trim();
+  if (name) return name;
+  if (member.email?.trim()) return member.email.trim();
+  return "Membre";
+}
 
-  const [companyId] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("tunhire_company_id");
-  });
+export default function RecruiterTeamPage() {
+  const currentUser = getUser() as StoredUser | null;
+  const { activeCompany, loading: companyLoading, isAdmin } =
+    useRequireActiveCompany();
+  const companyId = activeCompany ? String(activeCompany.companyId) : null;
   const [company, setCompany] = useState<CompanyResponse | null>(null);
-  const [members, setMembers] = useState<Membership[]>([]);
+  const [members, setMembers] = useState<MembershipResponse[]>([]);
   const [sessionActivity, setSessionActivity] = useState<ActivityItem[]>([]);
   const [inviteLink, setInviteLink] = useState("");
   const [inviteMsg, setInviteMsg] = useState("");
@@ -123,20 +121,17 @@ export default function RecruiterTeamPage() {
 
     try {
       const [companyRes, membersRes] = await Promise.all([
-        apiGet(`/companies/${activeCompanyId}`) as Promise<CompanyApiResponse>,
-        apiGet(`/companies/${activeCompanyId}/members`) as Promise<
-          Membership[]
-        >,
+        apiGet<CompanyResponse>(`/companies/${activeCompanyId}`),
+        apiGet<MembershipResponse[]>(`/companies/${activeCompanyId}/members`),
       ]);
 
-      if (!companyRes?.success || !companyRes.data) {
+      if (!companyRes.success || !companyRes.data) {
         setPageError("Impossible de charger les détails de l’entreprise.");
         return;
       }
 
-      const memberList = Array.isArray(membersRes) ? membersRes : [];
       setCompany(companyRes.data);
-      setMembers(memberList);
+      setMembers(membersRes.success ? membersRes.data || [] : []);
       setSessionActivity([]);
     } catch {
       setPageError("Erreur de connexion lors du chargement de l’équipe.");
@@ -146,20 +141,9 @@ export default function RecruiterTeamPage() {
   };
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) {
-      router.push("/login");
-      return;
-    }
-
-    if (!companyId) {
-      router.push("/dashboard/recruiter");
-      return;
-    }
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!companyId) return;
     void loadPage(companyId);
-  }, [companyId, router]);
+  }, [companyId]);
 
   function pushActivity(item: ActivityItem) {
     setSessionActivity((prev) => [item, ...prev]);
@@ -173,21 +157,21 @@ export default function RecruiterTeamPage() {
     setCopyMsg("");
 
     try {
-      const response = (await apiPost(
+      const response = await apiPost<{ token: string }>(
         `/companies/${companyId}/members/invites`,
-      )) as InviteTokenResponse;
-      if (!response?.token) {
+      );
+      if (!response.success || !response.data?.token) {
         setInviteMsg("Impossible de générer un lien pour le moment.");
         return;
       }
 
-      const link = buildInviteLink(response.token);
+      const link = buildInviteLink(response.data.token);
       setInviteLink(link);
       setInviteMsg(
         "Lien d’invitation généré. Il reste valide pendant 24 heures.",
       );
       pushActivity({
-        id: `invite-${response.token}`,
+        id: `invite-${response.data.token}`,
         title: "Invitation créée",
         detail:
           "Un lien d’invitation pour un nouveau recruiter vient d’être généré.",
@@ -212,16 +196,18 @@ export default function RecruiterTeamPage() {
     }
   }
 
-  async function changeRole(member: Membership, nextRole: MemberRole) {
+  async function changeRole(member: MembershipResponse, nextRole: MemberRole) {
     if (!companyId || member.role === nextRole) return;
 
     setUpdatingRoleUserId(member.userId);
     setPageError("");
 
     try {
-      const updated = (await apiPatch(
+      const res = await apiPatch<MembershipResponse>(
         `/companies/${companyId}/members/${member.userId}/role?role=${nextRole}`,
-      )) as Membership;
+      );
+      if (!res.success || !res.data) return;
+      const updated = res.data;
       const occurredAt = new Date().toISOString();
 
       setMembers((prev) =>
@@ -230,7 +216,7 @@ export default function RecruiterTeamPage() {
       pushActivity({
         id: `role-${member.userId}-${occurredAt}`,
         title: "Rôle mis à jour",
-        detail: `Le membre #${member.userId} est maintenant ${ROLE_LABELS[nextRole].toLowerCase()}.`,
+        detail: `Un membre est maintenant ${ROLE_LABELS[nextRole].toLowerCase()}.`,
         occurredAt,
         accent: "green",
       });
@@ -243,7 +229,7 @@ export default function RecruiterTeamPage() {
     }
   }
 
-  async function removeMember(member: Membership) {
+  async function removeMember(member: MembershipResponse) {
     if (!companyId) return;
 
     setRemovingUserId(member.userId);
@@ -258,7 +244,7 @@ export default function RecruiterTeamPage() {
       pushActivity({
         id: `remove-${member.userId}-${occurredAt}`,
         title: "Membre retiré",
-        detail: `Le membre #${member.userId} a été retiré de l’équipe de recrutement.`,
+        detail: "Un membre a été retiré de l’équipe de recrutement.",
         occurredAt,
         accent: "slate",
       });
@@ -271,13 +257,7 @@ export default function RecruiterTeamPage() {
     }
   }
 
-  const isCurrentUserAdmin = useMemo(() => {
-    if (!currentUser) return false;
-    return members.some(
-      (member) =>
-        member.userId === currentUser.id && member.role === "RECRUITER_ADMIN",
-    );
-  }, [currentUser, members]);
+  const isCurrentUserAdmin = isAdmin;
 
   const teamStats = useMemo(() => {
     const adminCount = members.filter(
@@ -299,19 +279,22 @@ export default function RecruiterTeamPage() {
   }, [members]);
 
   const activityFeed = useMemo(() => {
-    const membershipActivity: ActivityItem[] = members.map((member) => ({
-      id: `joined-${member.userId}-${member.joinedAt}`,
-      title:
-        member.userId === currentUser?.id
-          ? "Vous avez rejoint l’équipe"
-          : `Membre #${member.userId} actif`,
-      detail:
-        member.userId === currentUser?.id
-          ? "Votre accès à l’espace recrutement est actif."
-          : `Rôle actuel : ${ROLE_LABELS[member.role]}.`,
-      occurredAt: member.joinedAt,
-      accent: member.role === "RECRUITER_ADMIN" ? "green" : "slate",
-    }));
+    const membershipActivity: ActivityItem[] = members.map((member) => {
+      const displayName = getMemberDisplayName(member);
+      return {
+        id: `joined-${member.userId}-${member.joinedAt}`,
+        title:
+          member.userId === currentUser?.id
+            ? "Vous avez rejoint l’équipe"
+            : `${displayName} a rejoint l’équipe`,
+        detail:
+          member.userId === currentUser?.id
+            ? "Votre accès à l’espace recrutement est actif."
+            : `Rôle : ${ROLE_LABELS[member.role]}.`,
+        occurredAt: member.joinedAt || new Date().toISOString(),
+        accent: member.role === "RECRUITER_ADMIN" ? "green" : "slate",
+      };
+    });
 
     return [...sessionActivity, ...membershipActivity]
       .sort(
@@ -321,19 +304,24 @@ export default function RecruiterTeamPage() {
       .slice(0, 8);
   }, [currentUser?.id, members, sessionActivity]);
 
-  return (
-    <div className="min-h-screen bg-[#f7f9fb] text-[#191c1e]">
-      <div className="lg:hidden">
-        <Navbar />
+  if (companyLoading) {
+    return (
+      <div className="mx-auto max-w-6xl px-6 py-10">
+        <div className="surface-card h-40 animate-pulse rounded-3xl" />
       </div>
+    );
+  }
 
-      <RecruiterSidebar activeItem="team" />
+  if (!activeCompany) {
+    return <RecruiterSetupNotice />;
+  }
 
-      <main className="relative overflow-hidden lg:ml-[260px]">
-        <div className="pointer-events-none absolute -top-32 right-[-10%] h-[420px] w-[420px] rounded-full bg-[#00daf3]/20 blur-3xl" />
-        <div className="pointer-events-none absolute top-44 left-[-12%] h-[360px] w-[360px] rounded-full bg-[#69ff87]/20 blur-3xl" />
+  return (
+    <main className="relative overflow-hidden">
+      <div className="pointer-events-none absolute -top-32 right-[-10%] h-[420px] w-[420px] rounded-full bg-[#00daf3]/20 blur-3xl" />
+      <div className="pointer-events-none absolute top-44 left-[-12%] h-[360px] w-[360px] rounded-full bg-[#69ff87]/20 blur-3xl" />
 
-        <div className="max-w-6xl mx-auto px-6 pb-16 pt-10">
+      <div className="mx-auto max-w-6xl px-6 pb-16 pt-10">
           <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between mb-10">
             <div className="space-y-3">
               <span className="label-uppercase text-[10px] font-semibold text-[#006875]">
@@ -348,19 +336,9 @@ export default function RecruiterTeamPage() {
                 espace centralisé.
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => void generateInvite()}
-                disabled={generatingInvite || !companyId}
-                className="rounded-full bg-[#001e40] px-5 py-3 text-sm font-semibold text-white shadow-[0_20px_40px_rgba(0,30,64,0.25)] transition hover:opacity-90 disabled:opacity-50"
-              >
-                {generatingInvite ? "Génération..." : "Inviter un recruiter"}
-              </button>
-              <span className="rounded-full bg-[#e0e3e5] px-4 py-2 text-[11px] font-semibold text-[#004f58]">
-                {company?.name || "Entreprise active"}
-              </span>
-            </div>
+            <span className="rounded-full bg-[#e0e3e5] px-4 py-2 text-[11px] font-semibold text-[#004f58]">
+              {company?.name || "Entreprise active"}
+            </span>
           </header>
 
           {pageError && (
@@ -382,7 +360,7 @@ export default function RecruiterTeamPage() {
                   {
                     label: "Membres actifs",
                     value: String(teamStats.total),
-                    featured: true,
+                    featured: false,
                   },
                   {
                     label: "Admins recrutement",
@@ -479,9 +457,7 @@ export default function RecruiterTeamPage() {
                                   <div className="space-y-3">
                                     <div className="flex flex-wrap items-center gap-2">
                                       <h3 className="text-lg font-semibold text-[#001e40]">
-                                        {isCurrentUser && currentUser
-                                          ? `${currentUser.firstName} ${currentUser.lastName}`
-                                          : `Utilisateur #${member.userId}`}
+                                        {getMemberDisplayName(member)}
                                       </h3>
                                       {isCurrentUser && (
                                         <span className="rounded-full bg-[#00daf3]/15 px-3 py-1 text-[11px] font-semibold text-[#006875]">
@@ -496,12 +472,14 @@ export default function RecruiterTeamPage() {
                                     </div>
 
                                     <div className="grid gap-2 text-sm text-[#43474f] sm:grid-cols-2">
-                                      <p>
-                                        <span className="font-semibold text-[#001e40]">
-                                          ID utilisateur :
-                                        </span>{" "}
-                                        #{member.userId}
-                                      </p>
+                                      {member.email ? (
+                                        <p className="sm:col-span-2">
+                                          <span className="font-semibold text-[#001e40]">
+                                            Email :
+                                          </span>{" "}
+                                          {member.email}
+                                        </p>
+                                      ) : null}
                                       <p>
                                         <span className="font-semibold text-[#001e40]">
                                           Ajouté le :
@@ -674,6 +652,5 @@ export default function RecruiterTeamPage() {
           )}
         </div>
       </main>
-    </div>
   );
 }

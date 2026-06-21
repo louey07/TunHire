@@ -1,71 +1,115 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import NavBadgeDot from "@/components/NavBadgeDot";
+import CompanySwitcher from "@/components/recruiter/CompanySwitcher";
 import { logout } from "@/lib/auth";
+import { useRecruiterCompany } from "@/lib/context/RecruiterCompanyContext";
+import { useSidebarBadges } from "@/lib/hooks/useSidebarBadges";
 
-type RecruiterSidebarItem = "overview" | "jobs" | "candidates" | "team";
-
-type RecruiterSidebarProps = {
-  activeItem: RecruiterSidebarItem;
-};
-
-const navItems: Array<{
-  key: RecruiterSidebarItem;
-  label: string;
-  href: string;
-}> = [
-  { key: "overview", label: "Aperçu", href: "/dashboard/recruiter" },
-  { key: "jobs", label: "Offres", href: "/dashboard/recruiter/jobs" },
-  { key: "candidates", label: "Candidats", href: "/dashboard/recruiter/candidates" },
-  { key: "team", label: "Équipe", href: "/dashboard/recruiter/team" },
+const navItems = [
+  { label: "Aperçu", href: "/dashboard/recruiter", adminOnly: false, badge: null },
+  { label: "Offres", href: "/dashboard/recruiter/jobs", adminOnly: false, badge: null },
+  {
+    label: "Candidats",
+    href: "/dashboard/recruiter/candidates",
+    adminOnly: false,
+    badge: "candidates" as const,
+  },
+  {
+    label: "Chat",
+    href: "/dashboard/recruiter/chat",
+    adminOnly: false,
+    badge: "chat" as const,
+  },
+  { label: "Entreprise", href: "/dashboard/recruiter/company", adminOnly: true, badge: null },
+  { label: "Équipe", href: "/dashboard/recruiter/team", adminOnly: false, badge: null },
 ];
 
-export default function RecruiterSidebar({ activeItem }: RecruiterSidebarProps) {
+type RecruiterSidebarProps = {
+  mobileOpen?: boolean;
+  onNavigate?: () => void;
+};
+
+export default function RecruiterSidebar({
+  mobileOpen = false,
+  onNavigate,
+}: RecruiterSidebarProps) {
+  const pathname = usePathname();
+  const { isAdmin, activeCompany } = useRecruiterCompany();
+  const { badges } = useSidebarBadges(activeCompany?.companyId ?? null, !!activeCompany);
+
+  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
+
+  function showBadge(badge: (typeof navItems)[number]["badge"]) {
+    if (badge === "chat") {
+      return (
+        badges.chatUnread > 0 && !pathname.startsWith("/dashboard/recruiter/chat")
+      );
+    }
+    if (badge === "candidates") {
+      return (
+        badges.newApplications > 0 &&
+        !pathname.startsWith("/dashboard/recruiter/candidates")
+      );
+    }
+    return false;
+  }
+
   return (
-    <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-[260px] flex-col gap-8 bg-white border-r border-[#c3c6d1]/30 px-5 py-8 shadow-sm z-40">
-      <div className="px-2">
-        <div className="font-headline text-[20px] font-extrabold tracking-tight text-[#001e40]">
-          TunHire Nexus
+    <aside
+      className={`fixed left-0 top-0 z-50 flex h-screen w-64 flex-col bg-[var(--surface-container-low)] px-4 py-8 transition-transform lg:translate-x-0 ${
+        mobileOpen ? "translate-x-0" : "-translate-x-full"
+      } lg:flex`}
+    >
+      <div className="mb-10 px-2">
+        <div className="font-headline text-xl font-extrabold tracking-tight text-[var(--primary)]">
+          TunHire
         </div>
-        <p className="uppercase tracking-widest text-[10px] font-bold text-[#43474f] mt-1.5">
-          Recruiter Portal
+        <p className="label-uppercase mt-1 text-[10px] font-semibold text-[var(--on-surface-variant)]">
+          Espace recruteur
         </p>
       </div>
 
-      <nav className="grid gap-2">
-        {navItems.map((item) => {
-          const isActive = item.key === activeItem;
+      <CompanySwitcher />
+
+      <nav className="flex flex-1 flex-col gap-2">
+        {visibleItems.map((item) => {
+          const active =
+            item.href === "/dashboard/recruiter"
+              ? pathname === item.href
+              : pathname.startsWith(item.href);
+          const hasBadge = item.badge ? showBadge(item.badge) : false;
           return (
             <Link
-              key={item.key}
+              key={item.href}
               href={item.href}
-              className={`flex items-center justify-between px-4 py-3 rounded-[16px] text-[13px] font-semibold transition w-full text-left ${
-                isActive
-                  ? "text-[#001e40] bg-[#f2f4f6]/70 hover:bg-[#e0e3e5]"
-                  : "text-[#43474f] hover:bg-[#f2f4f6]"
+              onClick={onNavigate}
+              className={`flex items-center justify-between rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                active
+                  ? "bg-[color-mix(in_srgb,var(--surface-container-highest)_70%,transparent)] text-[var(--primary)]"
+                  : "text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-highest)]"
               }`}
             >
               <span>{item.label}</span>
-              {isActive && (
-                <span
-                  className="h-2 w-2 rounded-full bg-[#006875]"
-                  aria-hidden="true"
-                />
-              )}
+              {hasBadge ? (
+                <NavBadgeDot visible />
+              ) : active ? (
+                <span className="h-2 w-2 rounded-full bg-[var(--secondary)]" />
+              ) : null}
             </Link>
           );
         })}
-
-        <div className="pt-2 mt-2">
-          <button
-            type="button"
-            onClick={() => logout()}
-            className="flex items-center justify-between px-4 py-3 rounded-[16px] text-[13px] font-semibold text-[#43474f] hover:text-[#93000a] hover:bg-[#ffdad6]/50 transition w-full text-left"
-          >
-            Déconnecter
-          </button>
-        </div>
       </nav>
+
+      <button
+        type="button"
+        onClick={() => logout()}
+        className="mt-4 rounded-2xl px-4 py-3 text-left text-sm font-semibold text-[var(--on-surface-variant)] transition hover:bg-[var(--surface-container-highest)] hover:text-[#93000a]"
+      >
+        Déconnexion
+      </button>
     </aside>
   );
 }
